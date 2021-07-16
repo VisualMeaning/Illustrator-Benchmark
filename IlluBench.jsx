@@ -46,9 +46,10 @@ if (!Date.prototype.toISOString) {
                 ":" +
                 pad(this.getUTCMinutes()) +
                 ":" +
-                pad(this.getUTCSeconds()) +
-                "." +
-                (this.getUTCMilliseconds() / 1000).toFixed(3).slice(2, 5)
+                pad(this.getUTCSeconds())
+                //  +
+                // "." +
+                // (this.getUTCMilliseconds() / 1000).toFixed(3).slice(2, 5)
             );
         };
     })();
@@ -56,17 +57,22 @@ if (!Date.prototype.toISOString) {
 
 //_______ Main
 
-(function main() {
-    var info = infoIU(); //factors that might affect the results - to append to the results for this run
+main();
+
+function main(runs) {
+    var runCount = runs | 0;
+    var pastResults = getPastResults(); //average, mean, time delta, highest on record for individual tests and totals
+
+    var info = infoIU(pastResults); //factors that might affect the results - to append to the results for this run
 
     if (!info) {
         return
     }
 
+    var doc = app.documents.add();
     app.executeMenuCommand('doc-color-rgb'); //TODO might be interesting to compare results in CYMK!
 
-    var doc = app.documents.add();
-    var obj = doc.groupItems.add(); //The art item we'll add complexity in the tests, to see what kind of impact it has on the benchmark
+    var obj = doc.groupItems.add(); //The art item we'll add complexity to in the tests, to see what kind of impact it has on the benchmark
 
     var tests = []; //each test to come back as an object containing time and a score
 
@@ -93,16 +99,54 @@ if (!Date.prototype.toISOString) {
     // Tell us what happened
 
     var testTotals = sumTests(tests); //total time and score for this test
-    var pastResults = getPastResults(); //average, mean, time delta, highest on record for individual tests and totals
 
     recordResults(tests, testTotals, pastResults, info); //write time/score & info to illuBench record.txt file
 
-    displayResults(tests, testTotals, pastResults, info); //Tell us what happened
-
     progress(false);
 
+    displayResults(tests, testTotals, pastResults, info, runCount, progress); //Tell us what happened
+
     doc.close(SaveOptions.DONOTSAVECHANGES);
-})();
+};
+
+function sumTests(tests) {
+    var totals = {
+        time: 0,
+        score: 0
+    }
+    for (var i = 0; i < tests.length; i++) { //sum the total time and scores from all the tests
+        totals.time += tests[i].time;
+        totals.score += tests[i].score | 0;
+    }
+    return totals;
+}
+
+function funcTimer(benchTest) { //executes tests, returns time and score
+    var vars = {
+        name: "",
+        time: 0,
+        score: 0
+    }
+
+    var start = new Date().getTime();
+
+    vars.name = benchTest();
+
+    var end = new Date().getTime();
+
+    vars.time = end - start;
+    vars.score = score(vars.time);
+    return vars;
+}
+
+function score(time) {
+    var scale = 5000000; //arbitary, but hopefully interesting for comparison
+    if (time <= 1) {
+        return false; //doh... 
+    }
+    return Math.round((1 / time) * scale );
+    //return "--- time: " + time + ", 1/time: " + 1/time + ", 1/time *30000: " + (1/time) *30000;
+}
 
 function getPastResults() {
     //read from file - from the set of all past file runs
@@ -158,688 +202,162 @@ function recordResults(tests, testTotals, pastResults, info) {
 
 }
 
-function displayResults(tests, results, pastResults, info) {
-    //https://scriptui.joonas.me <- praise
-
-    // BENCHRESULTSWIN // 
-    // ===============
-    var benchResultsWin = new Window("dialog");
-    benchResultsWin.text = "Benchmark Results";
-    benchResultsWin.orientation = "column";
-    benchResultsWin.alignChildren = ["center", "top"];
-    benchResultsWin.spacing = 10;
-    benchResultsWin.margins = 16;
-
-    // TESTRESULTSPANEL
-    // ================
-    var testResultsPanel = benchResultsWin.add("panel", undefined, undefined, {
-        name: "testResultsPanel"
-    });
-    testResultsPanel.text = "Test results";
-    testResultsPanel.orientation = "row";
-    testResultsPanel.alignChildren = ["center", "center"];
-    testResultsPanel.spacing = 10;
-    testResultsPanel.margins = 10;
-    testResultsPanel.alignment = ["fill", "top"];
-
-    // TESTBREAKDOWNPANEL
-    // ==================
-    var testBreakdownPanel = testResultsPanel.add("group", undefined, {
-        name: "testBreakdownPanel"
-    });
-    testBreakdownPanel.orientation = "column";
-    testBreakdownPanel.alignChildren = ["fill", "center"];
-    testBreakdownPanel.spacing = 10;
-    testBreakdownPanel.margins = 0;
-
-    var dateText = testBreakdownPanel.add("statictext", undefined, undefined, {
-        name: "dateText"
-    });
-    dateText.text = "date";
-
-    // TESTRECTPANEL
-    // =============
-    var testRectPanel = testBreakdownPanel.add("panel", undefined, undefined, {
-        name: "testRectPanel"
-    });
-    testRectPanel.text = "1: Rectangles";
-    testRectPanel.orientation = "row";
-    testRectPanel.alignChildren = ["left", "top"];
-    testRectPanel.spacing = 10;
-    testRectPanel.margins = 10;
-
-    var statictext1 = testRectPanel.add("statictext", undefined, undefined, {
-        name: "statictext1"
-    });
-    statictext1.text = "Time: ";
-
-    var rectTimeText = testRectPanel.add("statictext", undefined, undefined, {
-        name: "rectTimeText"
-    });
-    rectTimeText.text = tests[0].time;
-
-    var statictext2 = testRectPanel.add("statictext", undefined, undefined, {
-        name: "statictext2"
-    });
-    statictext2.text = "Score:";
-
-    var rectScoreText = testRectPanel.add("statictext", undefined, undefined, {
-        name: "rectScoreText"
-    });
-    rectScoreText.text = tests[0].Score;
-
-    // TESTTRANSPANEL
-    // ==============
-    var testTransPanel = testBreakdownPanel.add("panel", undefined, undefined, {
-        name: "testTransPanel"
-    });
-    testTransPanel.text = "2:  Transformations";
-    testTransPanel.orientation = "row";
-    testTransPanel.alignChildren = ["left", "top"];
-    testTransPanel.spacing = 10;
-    testTransPanel.margins = 10;
-
-    var statictext3 = testTransPanel.add("statictext", undefined, undefined, {
-        name: "statictext3"
-    });
-    statictext3.text = "Time: ";
-
-    var transTimeText = testTransPanel.add("statictext", undefined, undefined, {
-        name: "transTimeText"
-    });
-    transTimeText.text = tests[1].time;
-
-    var statictext4 = testTransPanel.add("statictext", undefined, undefined, {
-        name: "statictext4"
-    });
-    statictext4.text = "Score:";
-
-    var transScoreText = testTransPanel.add("statictext", undefined, undefined, {
-        name: "transScoreText"
-    });
-    transScoreText.text = tests[1].score;
-
-    // TESTEFFPANEL
-    // ============
-    var testEffPanel = testBreakdownPanel.add("panel", undefined, undefined, {
-        name: "testEffPanel"
-    });
-    testEffPanel.text = "3:  Effects";
-    testEffPanel.orientation = "row";
-    testEffPanel.alignChildren = ["left", "top"];
-    testEffPanel.spacing = 10;
-    testEffPanel.margins = 10;
-
-    var statictext5 = testEffPanel.add("statictext", undefined, undefined, {
-        name: "statictext5"
-    });
-    statictext5.text = "Time: ";
-
-    var effTimeText = testEffPanel.add("statictext", undefined, undefined, {
-        name: "effTimeText"
-    });
-    effTimeText.text = tests[2].time;
-
-    var statictext6 = testEffPanel.add("statictext", undefined, undefined, {
-        name: "statictext6"
-    });
-    statictext6.text = "Score:";
-
-    var effScoreText = testEffPanel.add("statictext", undefined, undefined, {
-        name: "effScoreText"
-    });
-    effScoreText.text = tests[2].score;
-
-    // TESTZOOMPANEL
-    // =============
-    var testZoomPanel = testBreakdownPanel.add("panel", undefined, undefined, {
-        name: "testZoomPanel"
-    });
-    testZoomPanel.text = "4: Zooms";
-    testZoomPanel.orientation = "row";
-    testZoomPanel.alignChildren = ["left", "top"];
-    testZoomPanel.spacing = 10;
-    testZoomPanel.margins = 10;
-
-    var statictext7 = testZoomPanel.add("statictext", undefined, undefined, {
-        name: "statictext7"
-    });
-    statictext7.text = "Time: ";
-
-    var zoomTimeText = testZoomPanel.add("statictext", undefined, undefined, {
-        name: "zoomTimeText"
-    });
-    zoomTimeText.text = tests[3].time;
-
-    var statictext8 = testZoomPanel.add("statictext", undefined, undefined, {
-        name: "statictext8"
-    });
-    statictext8.text = "Score:";
-
-    var zoomScoreText = testZoomPanel.add("statictext", undefined, undefined, {
-        name: "zoomScoreText"
-    });
-    zoomScoreText.text = tests[3].score;
-
-    // TESTFILEPANEL
-    // =============
-    var testFilePanel = testBreakdownPanel.add("panel", undefined, undefined, {
-        name: "testFilePanel"
-    });
-    testFilePanel.text = "5: File writes";
-    testFilePanel.orientation = "row";
-    testFilePanel.alignChildren = ["left", "top"];
-    testFilePanel.spacing = 10;
-    testFilePanel.margins = 10;
-
-    var statictext9 = testFilePanel.add("statictext", undefined, undefined, {
-        name: "statictext9"
-    });
-    statictext9.text = "Time: ";
-
-    var fileTimeText = testFilePanel.add("statictext", undefined, undefined, {
-        name: "fileTimeText"
-    });
-    fileTimeText.text = tests[4].time;
-
-    var statictext10 = testFilePanel.add("statictext", undefined, undefined, {
-        name: "statictext10"
-    });
-    statictext10.text = "Score:";
-
-    var fileScoreText = testFilePanel.add("statictext", undefined, undefined, {
-        name: "fileScoreText"
-    });
-    fileScoreText.text = tests[4].score;
-
-    // TESTRESULTSPANEL
-    // ================
-    var divider1 = testResultsPanel.add("panel", undefined, undefined, {
-        name: "divider1"
-    });
-    divider1.alignment = "fill";
-
-    // TOTALPANEL
-    // ==========
-    var totalPanel = testResultsPanel.add("panel", undefined, undefined, {
-        name: "totalPanel"
-    });
-    totalPanel.text = "Total";
-    totalPanel.orientation = "row";
-    totalPanel.alignChildren = ["left", "top"];
-    totalPanel.spacing = 10;
-    totalPanel.margins = 33;
-
-    var statictext11 = totalPanel.add("statictext", undefined, undefined, {
-        name: "statictext11"
-    });
-    statictext11.text = "Time: ";
-
-    var totalTimeText = totalPanel.add("statictext", undefined, undefined, {
-        name: "totalTimeText"
-    });
-    totalTimeText.text = results.time;
-
-    var statictext12 = totalPanel.add("statictext", undefined, undefined, {
-        name: "statictext12"
-    });
-    statictext12.text = "Score:";
-
-    var totalScoreText = totalPanel.add("statictext", undefined, undefined, {
-        name: "totalScoreText"
-    });
-    totalScoreText.text = results.score;
-
-    // GROUP1
-    // ======
-    var group1 = testResultsPanel.add("group", undefined, {
-        name: "group1"
-    });
-    group1.orientation = "row";
-    group1.alignChildren = ["left", "center"];
-    group1.spacing = 10;
-    group1.margins = 0;
-
-    // BENCHRESULTSWIN
-    // ===============
-    var divider2 = benchResultsWin.add("panel", undefined, undefined, {
-        name: "divider2"
-    });
-    divider2.alignment = "fill";
-
-    // PASTRESULTSPANEL
-    // ================
-    var pastResultsPanel = benchResultsWin.add("panel", undefined, undefined, {
-        name: "pastResultsPanel"
-    });
-    pastResultsPanel.text = "Past results - <n> runs on record";
-    pastResultsPanel.orientation = "row";
-    pastResultsPanel.alignChildren = ["left", "center"];
-    pastResultsPanel.spacing = 10;
-    pastResultsPanel.margins = 10;
-
-    // AVERAGESBREAKDOWNPANEL
-    // ======================
-    var averagesBreakdownPanel = pastResultsPanel.add("group", undefined, {
-        name: "averagesBreakdownPanel"
-    });
-    averagesBreakdownPanel.orientation = "column";
-    averagesBreakdownPanel.alignChildren = ["fill", "center"];
-    averagesBreakdownPanel.spacing = 10;
-    averagesBreakdownPanel.margins = 0;
-
-    var averagesText = averagesBreakdownPanel.add("statictext", undefined, undefined, {
-        name: "averagesText"
-    });
-    averagesText.text = "Averages";
-
-    // AVGRECTPANEL
-    // ============
-    var avgRectPanel = averagesBreakdownPanel.add("panel", undefined, undefined, {
-        name: "avgRectPanel"
-    });
-    avgRectPanel.text = "1: Rectangles";
-    avgRectPanel.orientation = "row";
-    avgRectPanel.alignChildren = ["left", "top"];
-    avgRectPanel.spacing = 10;
-    avgRectPanel.margins = 10;
-
-    var statictext13 = avgRectPanel.add("statictext", undefined, undefined, {
-        name: "statictext13"
-    });
-    statictext13.text = "Time: ";
-
-    var avRectTimeText = avgRectPanel.add("statictext", undefined, undefined, {
-        name: "avRectTimeText"
-    });
-
-    var statictext14 = avgRectPanel.add("statictext", undefined, undefined, {
-        name: "statictext14"
-    });
-    statictext14.text = "Score:";
-
-    var avRectScoreText = avgRectPanel.add("statictext", undefined, undefined, {
-        name: "avRectScoreText"
-    });
-
-    // AVGTRANSPANEL
-    // =============
-    var avgTransPanel = averagesBreakdownPanel.add("panel", undefined, undefined, {
-        name: "avgTransPanel"
-    });
-    avgTransPanel.text = "2:  Transformations ";
-    avgTransPanel.orientation = "row";
-    avgTransPanel.alignChildren = ["left", "top"];
-    avgTransPanel.spacing = 10;
-    avgTransPanel.margins = 10;
-
-    var statictext15 = avgTransPanel.add("statictext", undefined, undefined, {
-        name: "statictext15"
-    });
-    statictext15.text = "Time: ";
-
-    var avTransTimeText = avgTransPanel.add("statictext", undefined, undefined, {
-        name: "avTransTimeText"
-    });
-
-    var statictext16 = avgTransPanel.add("statictext", undefined, undefined, {
-        name: "statictext16"
-    });
-    statictext16.text = "Score:";
-
-    var avTransScoreText = avgTransPanel.add("statictext", undefined, undefined, {
-        name: "avTransScoreText"
-    });
-
-    // AVGEFFPANEL
-    // ===========
-    var avgEffPanel = averagesBreakdownPanel.add("panel", undefined, undefined, {
-        name: "avgEffPanel"
-    });
-    avgEffPanel.text = "3:  Effects ";
-    avgEffPanel.orientation = "row";
-    avgEffPanel.alignChildren = ["left", "top"];
-    avgEffPanel.spacing = 10;
-    avgEffPanel.margins = 10;
-
-    var statictext17 = avgEffPanel.add("statictext", undefined, undefined, {
-        name: "statictext17"
-    });
-    statictext17.text = "Time: ";
-
-    var avEffTimeText = avgEffPanel.add("statictext", undefined, undefined, {
-        name: "avEffTimeText"
-    });
-
-    var statictext18 = avgEffPanel.add("statictext", undefined, undefined, {
-        name: "statictext18"
-    });
-    statictext18.text = "Score:";
-
-    var avEffScoreText = avgEffPanel.add("statictext", undefined, undefined, {
-        name: "avEffScoreText"
-    });
-
-    // AVGZOOMPANEL
-    // ============
-    var avgZoomPanel = averagesBreakdownPanel.add("panel", undefined, undefined, {
-        name: "avgZoomPanel"
-    });
-    avgZoomPanel.text = "4: Zooms ";
-    avgZoomPanel.orientation = "row";
-    avgZoomPanel.alignChildren = ["left", "top"];
-    avgZoomPanel.spacing = 10;
-    avgZoomPanel.margins = 10;
-
-    var statictext19 = avgZoomPanel.add("statictext", undefined, undefined, {
-        name: "statictext19"
-    });
-    statictext19.text = "Time: ";
-
-    var aZoomTimeText = avgZoomPanel.add("statictext", undefined, undefined, {
-        name: "aZoomTimeText"
-    });
-
-    var statictext20 = avgZoomPanel.add("statictext", undefined, undefined, {
-        name: "statictext20"
-    });
-    statictext20.text = "Score:";
-
-    var avZoomScoreText = avgZoomPanel.add("statictext", undefined, undefined, {
-        name: "avZoomScoreText"
-    });
-
-    // AVGFILEPANEL
-    // ============
-    var avgFilePanel = averagesBreakdownPanel.add("panel", undefined, undefined, {
-        name: "avgFilePanel"
-    });
-    avgFilePanel.text = "5: File writes";
-    avgFilePanel.orientation = "row";
-    avgFilePanel.alignChildren = ["left", "top"];
-    avgFilePanel.spacing = 10;
-    avgFilePanel.margins = 10;
-
-    var statictext21 = avgFilePanel.add("statictext", undefined, undefined, {
-        name: "statictext21"
-    });
-    statictext21.text = "Time: ";
-
-    var avFileTimeText = avgFilePanel.add("statictext", undefined, undefined, {
-        name: "avFileTimeText"
-    });
-
-    var statictext22 = avgFilePanel.add("statictext", undefined, undefined, {
-        name: "statictext22"
-    });
-    statictext22.text = "Score:";
-
-    var avFileScoreText = avgFilePanel.add("statictext", undefined, undefined, {
-        name: "avFileScoreText"
-    });
-
-    // PASTRESULTSPANEL
-    // ================
-    var divider3 = pastResultsPanel.add("panel", undefined, undefined, {
-        name: "divider3"
-    });
-    divider3.alignment = "fill";
-
-    // AVTOTALPANEL
-    // ============
-    var avTotalPanel = pastResultsPanel.add("panel", undefined, undefined, {
-        name: "avTotalPanel"
-    });
-    avTotalPanel.text = "Average totals";
-    avTotalPanel.orientation = "row";
-    avTotalPanel.alignChildren = ["left", "top"];
-    avTotalPanel.spacing = 10;
-    avTotalPanel.margins = 33;
-
-    var statictext23 = avTotalPanel.add("statictext", undefined, undefined, {
-        name: "statictext23"
-    });
-    statictext23.text = "Time: ";
-
-    var avTotalTimeText = avTotalPanel.add("statictext", undefined, undefined, {
-        name: "avTotalTimeText"
-    });
-
-    var statictext24 = avTotalPanel.add("statictext", undefined, undefined, {
-        name: "statictext24"
-    });
-    statictext24.text = "Score: ";
-
-    var avTotalScoreText = avTotalPanel.add("statictext", undefined, undefined, {
-        name: "avTotalScoreText"
-    });
-
-    // PASTRESULTSPANEL
-    // ================
-    var divider4 = pastResultsPanel.add("panel", undefined, undefined, {
-        name: "divider4"
-    });
-    divider4.alignment = "fill";
-
-    // HIGHBREAKDOWNSPANEL
-    // ===================
-    var highBreakdownsPanel = pastResultsPanel.add("group", undefined, {
-        name: "highBreakdownsPanel"
-    });
-    highBreakdownsPanel.orientation = "column";
-    highBreakdownsPanel.alignChildren = ["fill", "center"];
-    highBreakdownsPanel.spacing = 10;
-    highBreakdownsPanel.margins = 0;
-
-    var highBreakdownText = highBreakdownsPanel.add("statictext", undefined, undefined, {
-        name: "highBreakdownText"
-    });
-    highBreakdownText.text = "Fastest / highest score";
-
-    // HIGHRECTPANEL
-    // =============
-    var highRectPanel = highBreakdownsPanel.add("panel", undefined, undefined, {
-        name: "highRectPanel"
-    });
-    highRectPanel.text = "1: Rectangles ";
-    highRectPanel.orientation = "row";
-    highRectPanel.alignChildren = ["left", "top"];
-    highRectPanel.spacing = 10;
-    highRectPanel.margins = 10;
-
-    var statictext25 = highRectPanel.add("statictext", undefined, undefined, {
-        name: "statictext25"
-    });
-    statictext25.text = "Time: ";
-
-    var highRectTimeText = highRectPanel.add("statictext", undefined, undefined, {
-        name: "highRectTimeText"
-    });
-
-    var statictext26 = highRectPanel.add("statictext", undefined, undefined, {
-        name: "statictext26"
-    });
-    statictext26.text = "Score:";
-
-    var highRectScoreText = highRectPanel.add("statictext", undefined, undefined, {
-        name: "highRectScoreText"
-    });
-
-    // HIGHTRANSPANEL
-    // ==============
-    var highTransPanel = highBreakdownsPanel.add("panel", undefined, undefined, {
-        name: "highTransPanel"
-    });
-    highTransPanel.text = "2:  Transformations average";
-    highTransPanel.orientation = "row";
-    highTransPanel.alignChildren = ["left", "top"];
-    highTransPanel.spacing = 10;
-    highTransPanel.margins = 10;
-
-    var statictext27 = highTransPanel.add("statictext", undefined, undefined, {
-        name: "statictext27"
-    });
-    statictext27.text = "Time: ";
-
-    var highTransTimeText = highTransPanel.add("statictext", undefined, undefined, {
-        name: "highTransTimeText"
-    });
-
-    var statictext28 = highTransPanel.add("statictext", undefined, undefined, {
-        name: "statictext28"
-    });
-    statictext28.text = "Score:";
-
-    var highTransScoreText = highTransPanel.add("statictext", undefined, undefined, {
-        name: "highTransScoreText"
-    });
-
-    // HIGHEFFPANEL
-    // ============
-    var highEffPanel = highBreakdownsPanel.add("panel", undefined, undefined, {
-        name: "highEffPanel"
-    });
-    highEffPanel.text = "3:  Effects average";
-    highEffPanel.orientation = "row";
-    highEffPanel.alignChildren = ["left", "top"];
-    highEffPanel.spacing = 10;
-    highEffPanel.margins = 10;
-
-    var statictext29 = highEffPanel.add("statictext", undefined, undefined, {
-        name: "statictext29"
-    });
-    statictext29.text = "Time: ";
-
-    var highEffTimeText = highEffPanel.add("statictext", undefined, undefined, {
-        name: "highEffTimeText"
-    });
-
-    var statictext30 = highEffPanel.add("statictext", undefined, undefined, {
-        name: "statictext30"
-    });
-    statictext30.text = "Score:";
-
-    var highEffScoreText = highEffPanel.add("statictext", undefined, undefined, {
-        name: "highEffScoreText"
-    });
-
-    // HIGHZOOMPANEL
-    // =============
-    var highZoomPanel = highBreakdownsPanel.add("panel", undefined, undefined, {
-        name: "highZoomPanel"
-    });
-    highZoomPanel.text = "4: Zooms average";
-    highZoomPanel.orientation = "row";
-    highZoomPanel.alignChildren = ["left", "top"];
-    highZoomPanel.spacing = 10;
-    highZoomPanel.margins = 10;
-
-    var statictext31 = highZoomPanel.add("statictext", undefined, undefined, {
-        name: "statictext31"
-    });
-    statictext31.text = "Time: ";
-
-    var highZoomTimeText = highZoomPanel.add("statictext", undefined, undefined, {
-        name: "highZoomTimeText"
-    });
-
-    var statictext32 = highZoomPanel.add("statictext", undefined, undefined, {
-        name: "statictext32"
-    });
-    statictext32.text = "Score:";
-
-    var highZoomScoreText = highZoomPanel.add("statictext", undefined, undefined, {
-        name: "highZoomScoreText"
-    });
-
-    // HIGHFILEPANEL
-    // =============
-    var highFilePanel = highBreakdownsPanel.add("panel", undefined, undefined, {
-        name: "highFilePanel"
-    });
-    highFilePanel.text = "5: File writes average";
-    highFilePanel.orientation = "row";
-    highFilePanel.alignChildren = ["left", "top"];
-    highFilePanel.spacing = 10;
-    highFilePanel.margins = 10;
-
-    var statictext33 = highFilePanel.add("statictext", undefined, undefined, {
-        name: "statictext33"
-    });
-    statictext33.text = "Time: ";
-
-    var highFileTimeText = highFilePanel.add("statictext", undefined, undefined, {
-        name: "highFileTimeText"
-    });
-
-    var statictext34 = highFilePanel.add("statictext", undefined, undefined, {
-        name: "statictext34"
-    });
-    statictext34.text = "Score:";
-
-    var highFileScoreText = highFilePanel.add("statictext", undefined, undefined, {
-        name: "highFileScoreText"
-    });
-
-    // PASTRESULTSPANEL
-    // ================
-    var divider5 = pastResultsPanel.add("panel", undefined, undefined, {
-        name: "divider5"
-    });
-    divider5.alignment = "fill";
-
-    // HIGHTOTALPANEL
-    // ==============
-    var highTotalPanel = pastResultsPanel.add("panel", undefined, undefined, {
-        name: "highTotalPanel"
-    });
-    highTotalPanel.text = "Fastest / highest total";
-    highTotalPanel.orientation = "row";
-    highTotalPanel.alignChildren = ["left", "top"];
-    highTotalPanel.spacing = 10;
-    highTotalPanel.margins = 33;
-
-    var statictext35 = highTotalPanel.add("statictext", undefined, undefined, {
-        name: "statictext35"
-    });
-    statictext35.text = "Time: ";
-
-    var highTotalTimeText = highTotalPanel.add("statictext", undefined, undefined, {
-        name: "highTotalTimeText"
-    });
-
-    var statictext36 = highTotalPanel.add("statictext", undefined, undefined, {
-        name: "statictext36"
-    });
-    statictext36.text = "Score:";
-
-    var statictext37 = highTotalPanel.add("statictext", undefined, undefined, {
-        name: "statictext37"
-    });
-    statictext37.text = "highTotalScoreText";
-
-    // BENCHRESULTSWIN
-    // ===============
-    var closeButton = benchResultsWin.add("button", undefined, undefined, {
-        name: "closeButton"
-    });
-    closeButton.text = "Close";
-
-    benchResultsWin.show();
-
+/* _____________________ Tests _________________________
+   _____________________________________________________ 
+   Do a particular type of operation in a regular, sufficiently-
+   complex-to-measure sort of way, return test name
+   */
+
+//______ TEST 1
+function rectanglesTest(obj, progress) {
+    var doc = obj.layer.parent;
+    var rects = [];
+    progress("Rectangles test");
+
+    for (var i = 0; i < 40; i++) {
+        rects[i] = [];
+        for (var j = 0; j < 80; j++) {
+            rects[i][j] = doc.pathItems.rectangle(-3, 3, 4, 4);
+            rects[i][j].move(obj, ElementPlacement.PLACEATEND);
+            rects[i][j].translate(j + (i * 7), j * 4);
+            rects[i][j].fillColor.red = rects[i][j].strokeColor.blue = 20 + (Math.round(Math.random() * 70));
+            rects[i][j].fillColor.green = rects[i][j].strokeColor.red = 90 + (Math.round(Math.random() * 65));
+            rects[i][j].fillColor.blue = rects[i][j].strokeColor.green = 160 + (Math.round(Math.random() * 30));
+        }
+    }
+    centreObj(obj);
+
+    app.redraw();
+    return "Rectangles test";
 }
 
-function sumTests(tests) {
-    var totals = {
-        time: null,
-        score: null
+//______ TEST 2 
+function transformationsTest(obj, progress) {
+
+    progress("Transformations test");
+
+    for (var i = 0; i < obj.pageItems.length; i++) { // 220,000 points
+        //rotate
+        obj.pageItems[i].rotate(i * 2);
+        obj.pageItems[i].resize(111, 188);
+  //      obj.pageItems[i].translate(0.03 * i, 0.05 * i);
+        //obj.pageItems[i].zOrder( ZOrderMethod.BRINGFORWARD ); //Is going to mutate the obj.pageItems order while we iterate through it? Not sure...
     }
-    for (var i = 0; i < tests.length; i++) { //sum the total time and scores from all the tests
-        totals.time += tests[i].time;
-        totals.score += tests[i].score;
-    }
-    return totals;
+    centreObj(obj);
+    app.redraw();
+    return "Transformations test";
 }
+
+//______ TEST 3
+function effectsTest(obj, progress) {
+    progress("Effects test");
+    /*Thanks m1b, femkeblanco, Silly-V, CarlosCanto 
+    https://community.adobe.com/t5/illustrator/pageitem-applyeffect-liveeffectxml/m-p/7315221
+    https://community.adobe.com/t5/illustrator/scripting-live-effects/m-p/11744702 
+    https://github.com/mark1bean/ai-live-effect-functions/blob/master/README.md
+    */
+    var i=0;
+    var efct = '<LiveEffect name="Adobe Deform"><Dict data="R DeformValue 0.45 R DeformVert 0 B Rotate 0 I DeformStyle 1 R DeformHoriz 0 "/></LiveEffect>';
+
+    // (function(){ 
+    //     return '<LiveEffect name="Adobe Deform"><Dict data="R DeformValue '+0.45+' R DeformVert 0 B Rotate 0 I DeformStyle 1 R DeformHoriz 0 "/></LiveEffect>';
+    // });
+
+    for ( var i = 0; i < obj.pageItems.length; i+=25) { 
+        obj.pageItems[i].applyEffect(efct);
+        app.redraw();
+    }  
+
+    obj.applyEffect(efct);
+
+    app.redraw();
+    return "Effects test";
+}
+
+//______ TEST 4
+function zoomTest(doc, progress) {
+    app.redraw();
+    progress("Zoom test");
+    var view = doc.views[0];
+    view.zoom = 1;
+
+    for (var a = 1; a > 0.3; a -= 0.01) {
+        view.zoom = a;
+        app.redraw();
+    }
+    app.redraw();
+    for (var a = 0.3; a <= 1; a += 0.01) {
+        view.zoom = a;
+        app.redraw();
+    }
+    app.redraw();
+    return "Zoom test";
+}
+
+//______ TEST 5
+function fileWriteTest(doc, progress) {
+    progress("File write test");
+    //write a few files, delete files
+
+    return "File write test";
+}
+
+function centreObj(obj) {
+    var doc = obj.layer.parent;
+    var activeAB = doc.artboards[doc.artboards.getActiveArtboardIndex()];
+    var artboardRight = activeAB.artboardRect[0] + activeAB.artboardRect[2];
+    var artboardBottom = activeAB.artboardRect[1] + activeAB.artboardRect[3];
+    var horziontalCenterPosition = (artboardRight - obj.width) / 2;
+    var verticalCenterPosition = (artboardBottom + obj.height) / 2;
+
+    obj.position = [horziontalCenterPosition, verticalCenterPosition];
+    
+    app.redraw();
+}
+
+//_____________PROGRESS WINDOW UI
+//_________________________________________
+//_________________________________________
+//_________________________________________
+//_________________________________________
+
+function progressWindow() {
+    var dialog = new Window("window");
+    dialog.text = "Export Progress";
+    dialog.orientation = "column";
+    dialog.alignChildren = ["left", "top"];
+    dialog.spacing = 10;
+    dialog.margins = 16;
+    dialog.onClick = function() {
+        dialog.close();
+    };
+
+    var stage = dialog.add("statictext", undefined, undefined, {
+        name: "stage"
+    });
+    stage.text = "Stage: ";
+    stage.preferredSize.width = 465;
+
+    return function _updateText(text) {
+        if (!dialog) {
+            return;
+        }
+        if (!text) {
+            dialog.close();
+            return;
+        }
+        dialog.show();
+        stage.text = text;
+        dialog.update();
+    };
+}
+
+//_____________ INFO UI
+//_________________________________________
+//_________________________________________
+//_________________________________________
+//_________________________________________
+
 
 function infoIU() { //What factors might be contributing to the benchmark times?
     var date = new Date();
@@ -1304,160 +822,503 @@ function infoIU() { //What factors might be contributing to the benchmark times?
 }
 
 
-function centreObj(obj) {
-    var doc = obj.layer.parent;
-    var activeAB = doc.artboards[doc.artboards.getActiveArtboardIndex()];
-    var artboardRight = activeAB.artboardRect[0] + activeAB.artboardRect[2];
-    var artboardBottom = activeAB.artboardRect[1] + activeAB.artboardRect[3];
-    var horziontalCenterPosition = (artboardRight - obj.width) / 2;
-    var verticalCenterPosition = (artboardBottom + obj.height) / 2;
+//_____________DISPLAY RESULTS UI
+//_________________________________________
+//_________________________________________
+//_________________________________________
+//_________________________________________
 
-    obj.position = [horziontalCenterPosition, verticalCenterPosition];
 
-    app.redraw();
-}
+function displayResults(tests, results, pastResults, info, runCount) {
+    //https://scriptui.joonas.me <- praise
 
-function progressWindow() {
-    var dialog = new Window("window");
-    dialog.text = "Export Progress";
-    dialog.orientation = "column";
-    dialog.alignChildren = ["left", "top"];
-    dialog.spacing = 10;
-    dialog.margins = 16;
-    dialog.onClick = function() {
-        dialog.close();
-    };
+    // BENCHRESULTSWIN
+    // ===============
+    var benchResultsWin = new Window("dialog"); 
+        benchResultsWin.text = "Benchmark Results"; 
+        benchResultsWin.orientation = "column"; 
+        benchResultsWin.alignChildren = ["center","top"]; 
+        benchResultsWin.spacing = 10; 
+        benchResultsWin.margins = 16; 
 
-    var stage = dialog.add("statictext", undefined, undefined, {
-        name: "stage"
-    });
-    stage.text = "Stage: ";
-    stage.preferredSize.width = 465;
+    // TPANEL1
+    // =======
+    var tpanel1 = benchResultsWin.add("tabbedpanel", undefined, undefined, {name: "tpanel1"}); 
+        tpanel1.alignChildren = "fill"; 
+        tpanel1.preferredSize.width = 451; 
+        tpanel1.margins = 0; 
 
-    return function _updateText(text) {
-        if (!dialog) {
+    // THISTESTTAB
+    // ===========
+    var thisTestTab = tpanel1.add("tab", undefined, undefined, {name: "thisTestTab"}); 
+        thisTestTab.text = "This test"; 
+        thisTestTab.orientation = "row"; 
+        thisTestTab.alignChildren = ["left","top"]; 
+        thisTestTab.spacing = 10; 
+        thisTestTab.margins = 10; 
+
+    // TESTRESULTSGROUP
+    // ================
+    var testResultsGroup = thisTestTab.add("group", undefined, {name: "testResultsGroup"}); 
+        testResultsGroup.orientation = "column"; 
+        testResultsGroup.alignChildren = ["fill","top"]; 
+        testResultsGroup.spacing = 10; 
+        testResultsGroup.margins = 0; 
+        testResultsGroup.alignment = ["left","fill"]; 
+
+    var testDateText = testResultsGroup.add("statictext", undefined, undefined, {name: "testDateText"}); 
+        testDateText.text = "Date: " + info.date; 
+
+    // TESTRECTPANEL
+    // =============
+    var testRectPanel = testResultsGroup.add("panel", undefined, undefined, {name: "testRectPanel"}); 
+        testRectPanel.text = "1: Rectangles"; 
+        testRectPanel.orientation = "row"; 
+        testRectPanel.alignChildren = ["left","top"]; 
+        testRectPanel.spacing = 10; 
+        testRectPanel.margins = 10; 
+
+    var statictext1 = testRectPanel.add("statictext", undefined, undefined, {name: "statictext1"}); 
+        statictext1.text = "Time: "; 
+
+    var rectTimeText = testRectPanel.add("statictext", undefined, undefined, {name: "rectTimeText"}); 
+    rectTimeText.text = tests[0].time;
+
+    var statictext2 = testRectPanel.add("statictext", undefined, undefined, {name: "statictext2"}); 
+        statictext2.text = "Score:"; 
+
+    var rectScoreText = testRectPanel.add("statictext", undefined, undefined, {name: "rectScoreText"}); 
+    rectScoreText.text = tests[0].score;
+
+    // TESTTRANSPANEL
+    // ==============
+    var testTransPanel = testResultsGroup.add("panel", undefined, undefined, {name: "testTransPanel"}); 
+        testTransPanel.text = "2:  Transformations"; 
+        testTransPanel.orientation = "row"; 
+        testTransPanel.alignChildren = ["left","top"]; 
+        testTransPanel.spacing = 10; 
+        testTransPanel.margins = 10; 
+
+    var statictext3 = testTransPanel.add("statictext", undefined, undefined, {name: "statictext3"}); 
+        statictext3.text = "Time: "; 
+
+    var transTimeText = testTransPanel.add("statictext", undefined, undefined, {name: "transTimeText"}); 
+    transTimeText.text = tests[1].time;
+
+    var statictext4 = testTransPanel.add("statictext", undefined, undefined, {name: "statictext4"}); 
+        statictext4.text = "Score:"; 
+
+    var transScoreText = testTransPanel.add("statictext", undefined, undefined, {name: "transScoreText"}); 
+    transScoreText.text = tests[1].score;
+
+    // TESTEFFPANEL
+    // ============
+    var testEffPanel = testResultsGroup.add("panel", undefined, undefined, {name: "testEffPanel"}); 
+        testEffPanel.text = "3:  Effects"; 
+        testEffPanel.orientation = "row"; 
+        testEffPanel.alignChildren = ["left","top"]; 
+        testEffPanel.spacing = 10; 
+        testEffPanel.margins = 10; 
+
+    var statictext5 = testEffPanel.add("statictext", undefined, undefined, {name: "statictext5"}); 
+        statictext5.text = "Time: "; 
+
+    var effTimeText = testEffPanel.add("statictext", undefined, undefined, {name: "effTimeText"}); 
+    effTimeText.text = tests[2].time;
+
+    var statictext6 = testEffPanel.add("statictext", undefined, undefined, {name: "statictext6"}); 
+        statictext6.text = "Score:"; 
+
+    var effScoreText = testEffPanel.add("statictext", undefined, undefined, {name: "effScoreText"}); 
+    effScoreText.text = tests[2].score;
+
+    // TESTZOOMPANEL
+    // =============
+    var testZoomPanel = testResultsGroup.add("panel", undefined, undefined, {name: "testZoomPanel"}); 
+        testZoomPanel.text = "4: Zooms"; 
+        testZoomPanel.orientation = "row"; 
+        testZoomPanel.alignChildren = ["left","top"]; 
+        testZoomPanel.spacing = 10; 
+        testZoomPanel.margins = 10; 
+
+    var statictext7 = testZoomPanel.add("statictext", undefined, undefined, {name: "statictext7"}); 
+        statictext7.text = "Time: "; 
+
+    var zoomTimeText = testZoomPanel.add("statictext", undefined, undefined, {name: "zoomTimeText"}); 
+    zoomTimeText.text = tests[3].time;
+
+    var statictext8 = testZoomPanel.add("statictext", undefined, undefined, {name: "statictext8"}); 
+        statictext8.text = "Score:"; 
+
+    var zoomScoreText = testZoomPanel.add("statictext", undefined, undefined, {name: "zoomScoreText"}); 
+    zoomScoreText.text = tests[3].score;
+
+    // TESTFILEPANEL
+    // =============
+    var testFilePanel = testResultsGroup.add("panel", undefined, undefined, {name: "testFilePanel"}); 
+        testFilePanel.text = "5: File writes"; 
+        testFilePanel.orientation = "row"; 
+        testFilePanel.alignChildren = ["left","top"]; 
+        testFilePanel.spacing = 10; 
+        testFilePanel.margins = 10; 
+
+    var statictext9 = testFilePanel.add("statictext", undefined, undefined, {name: "statictext9"}); 
+        statictext9.text = "Time: "; 
+
+    var fileTimeText = testFilePanel.add("statictext", undefined, undefined, {name: "fileTimeText"}); 
+    fileTimeText.text = tests[4].time;
+
+    var statictext10 = testFilePanel.add("statictext", undefined, undefined, {name: "statictext10"}); 
+        statictext10.text = "Score:"; 
+
+    var fileScoreText = testFilePanel.add("statictext", undefined, undefined, {name: "fileScoreText"}); 
+    fileScoreText.text = tests[4].score;
+
+
+    // TESTRESULTSGROUP
+    // ================
+    var divider1 = testResultsGroup.add("panel", undefined, undefined, {name: "divider1"}); 
+        divider1.alignment = "fill"; 
+
+    // TOTALPANEL
+    // ==========
+    var totalPanel = testResultsGroup.add("panel", undefined, undefined, {name: "totalPanel"}); 
+        totalPanel.text = "Total"; 
+        totalPanel.orientation = "row"; 
+        totalPanel.alignChildren = ["left","top"]; 
+        totalPanel.spacing = 10; 
+        totalPanel.margins = 33; 
+
+    var statictext11 = totalPanel.add("statictext", undefined, undefined, {name: "statictext11"}); 
+        statictext11.text = "Time: "; 
+
+    var totalTimeText = totalPanel.add("statictext", undefined, undefined, {name: "totalTimeText"}); 
+    totalTimeText.text = results.time;
+
+    var statictext12 = totalPanel.add("statictext", undefined, undefined, {name: "statictext12"}); 
+        statictext12.text = "Score:"; 
+
+    var totalScoreText = totalPanel.add("statictext", undefined, undefined, {name: "totalScoreText"}); 
+    totalScoreText.text = results.score;
+
+    // THISTESTTAB
+    // ===========
+    var divider2 = thisTestTab.add("panel", undefined, undefined, {name: "divider2"}); 
+        divider2.alignment = "fill"; 
+
+    // INFOGROUP
+    // =========
+    var infoGroup = thisTestTab.add("group", undefined, {name: "infoGroup"}); 
+        infoGroup.orientation = "column"; 
+        infoGroup.alignChildren = ["left","top"]; 
+        infoGroup.spacing = 10; 
+        infoGroup.margins = 0; 
+        infoGroup.alignment = ["left","fill"]; 
+
+    var infoText = infoGroup.add("statictext", undefined, undefined, {name: "infoText", multiline: true}); 
+        infoText.text = "Test info:"; 
+        infoText.alignment = ["left","top"]; 
+
+    // AVERAGESANDHIGHSTAB
+    // ===================
+    var averagesAndHighsTab = tpanel1.add("tab", undefined, undefined, {name: "averagesAndHighsTab"}); 
+        averagesAndHighsTab.text = "Averages and highs"; 
+        averagesAndHighsTab.orientation = "row"; 
+        averagesAndHighsTab.alignChildren = ["left","top"]; 
+        averagesAndHighsTab.spacing = 10; 
+        averagesAndHighsTab.margins = 10; 
+
+    // TPANEL1
+    // =======
+    tpanel1.selection = thisTestTab; 
+
+    // AVERAGESBREAKDOWNPANEL
+    // ======================
+    var averagesBreakdownPanel = averagesAndHighsTab.add("group", undefined, {name: "averagesBreakdownPanel"}); 
+        averagesBreakdownPanel.orientation = "column"; 
+        averagesBreakdownPanel.alignChildren = ["fill","center"]; 
+        averagesBreakdownPanel.spacing = 10; 
+        averagesBreakdownPanel.margins = 0; 
+
+    var averagesText = averagesBreakdownPanel.add("statictext", undefined, undefined, {name: "averagesText"}); 
+        averagesText.text = "Averages"; 
+
+    // AVGRECTPANEL
+    // ============
+    var avgRectPanel = averagesBreakdownPanel.add("panel", undefined, undefined, {name: "avgRectPanel"}); 
+        avgRectPanel.text = "1: Rectangles"; 
+        avgRectPanel.orientation = "row"; 
+        avgRectPanel.alignChildren = ["left","top"]; 
+        avgRectPanel.spacing = 10; 
+        avgRectPanel.margins = 10; 
+
+    var statictext13 = avgRectPanel.add("statictext", undefined, undefined, {name: "statictext13"}); 
+        statictext13.text = "Time: "; 
+
+    var avRectTimeText = avgRectPanel.add("statictext", undefined, undefined, {name: "avRectTimeText"}); 
+
+    var statictext14 = avgRectPanel.add("statictext", undefined, undefined, {name: "statictext14"}); 
+        statictext14.text = "Score:"; 
+
+    var avRectScoreText = avgRectPanel.add("statictext", undefined, undefined, {name: "avRectScoreText"}); 
+
+    // AVGTRANSPANEL
+    // =============
+    var avgTransPanel = averagesBreakdownPanel.add("panel", undefined, undefined, {name: "avgTransPanel"}); 
+        avgTransPanel.text = "2:  Transformations "; 
+        avgTransPanel.orientation = "row"; 
+        avgTransPanel.alignChildren = ["left","top"]; 
+        avgTransPanel.spacing = 10; 
+        avgTransPanel.margins = 10; 
+
+    var statictext15 = avgTransPanel.add("statictext", undefined, undefined, {name: "statictext15"}); 
+        statictext15.text = "Time: "; 
+
+    var avTransTimeText = avgTransPanel.add("statictext", undefined, undefined, {name: "avTransTimeText"}); 
+
+    var statictext16 = avgTransPanel.add("statictext", undefined, undefined, {name: "statictext16"}); 
+        statictext16.text = "Score:"; 
+
+    var avTransScoreText = avgTransPanel.add("statictext", undefined, undefined, {name: "avTransScoreText"}); 
+
+    // AVGEFFPANEL
+    // ===========
+    var avgEffPanel = averagesBreakdownPanel.add("panel", undefined, undefined, {name: "avgEffPanel"}); 
+        avgEffPanel.text = "3:  Effects "; 
+        avgEffPanel.orientation = "row"; 
+        avgEffPanel.alignChildren = ["left","top"]; 
+        avgEffPanel.spacing = 10; 
+        avgEffPanel.margins = 10; 
+
+    var statictext17 = avgEffPanel.add("statictext", undefined, undefined, {name: "statictext17"}); 
+        statictext17.text = "Time: "; 
+
+    var avEffTimeText = avgEffPanel.add("statictext", undefined, undefined, {name: "avEffTimeText"}); 
+
+    var statictext18 = avgEffPanel.add("statictext", undefined, undefined, {name: "statictext18"}); 
+        statictext18.text = "Score:"; 
+
+    var avEffScoreText = avgEffPanel.add("statictext", undefined, undefined, {name: "avEffScoreText"}); 
+
+    // AVGZOOMPANEL
+    // ============
+    var avgZoomPanel = averagesBreakdownPanel.add("panel", undefined, undefined, {name: "avgZoomPanel"}); 
+        avgZoomPanel.text = "4: Zooms "; 
+        avgZoomPanel.orientation = "row"; 
+        avgZoomPanel.alignChildren = ["left","top"]; 
+        avgZoomPanel.spacing = 10; 
+        avgZoomPanel.margins = 10; 
+
+    var statictext19 = avgZoomPanel.add("statictext", undefined, undefined, {name: "statictext19"}); 
+        statictext19.text = "Time: "; 
+
+    var aZoomTimeText = avgZoomPanel.add("statictext", undefined, undefined, {name: "aZoomTimeText"}); 
+
+    var statictext20 = avgZoomPanel.add("statictext", undefined, undefined, {name: "statictext20"}); 
+        statictext20.text = "Score:"; 
+
+    var avZoomScoreText = avgZoomPanel.add("statictext", undefined, undefined, {name: "avZoomScoreText"}); 
+
+    // AVGFILEPANEL
+    // ============
+    var avgFilePanel = averagesBreakdownPanel.add("panel", undefined, undefined, {name: "avgFilePanel"}); 
+        avgFilePanel.text = "5: File writes"; 
+        avgFilePanel.orientation = "row"; 
+        avgFilePanel.alignChildren = ["left","top"]; 
+        avgFilePanel.spacing = 10; 
+        avgFilePanel.margins = 10; 
+
+    var statictext21 = avgFilePanel.add("statictext", undefined, undefined, {name: "statictext21"}); 
+        statictext21.text = "Time: "; 
+
+    var avFileTimeText = avgFilePanel.add("statictext", undefined, undefined, {name: "avFileTimeText"}); 
+
+    var statictext22 = avgFilePanel.add("statictext", undefined, undefined, {name: "statictext22"}); 
+        statictext22.text = "Score:"; 
+
+    var avFileScoreText = avgFilePanel.add("statictext", undefined, undefined, {name: "avFileScoreText"}); 
+
+    // AVERAGESBREAKDOWNPANEL
+    // ======================
+    var divider3 = averagesBreakdownPanel.add("panel", undefined, undefined, {name: "divider3"}); 
+        divider3.alignment = "fill"; 
+
+    // AVTOTALPANEL
+    // ============
+    var avTotalPanel = averagesBreakdownPanel.add("panel", undefined, undefined, {name: "avTotalPanel"}); 
+        avTotalPanel.text = "Average totals"; 
+        avTotalPanel.orientation = "row"; 
+        avTotalPanel.alignChildren = ["left","top"]; 
+        avTotalPanel.spacing = 10; 
+        avTotalPanel.margins = 33; 
+
+    var statictext23 = avTotalPanel.add("statictext", undefined, undefined, {name: "statictext23"}); 
+        statictext23.text = "Time: "; 
+
+    var avTotalTimeText = avTotalPanel.add("statictext", undefined, undefined, {name: "avTotalTimeText"}); 
+
+    var statictext24 = avTotalPanel.add("statictext", undefined, undefined, {name: "statictext24"}); 
+        statictext24.text = "Score: "; 
+
+    var avTotalScoreText = avTotalPanel.add("statictext", undefined, undefined, {name: "avTotalScoreText"}); 
+
+    // AVERAGESANDHIGHSTAB
+    // ===================
+    var divider4 = averagesAndHighsTab.add("panel", undefined, undefined, {name: "divider4"}); 
+        divider4.alignment = "fill"; 
+
+    // HIGHBREAKDOWNSPANEL
+    // ===================
+    var highBreakdownsPanel = averagesAndHighsTab.add("group", undefined, {name: "highBreakdownsPanel"}); 
+        highBreakdownsPanel.orientation = "column"; 
+        highBreakdownsPanel.alignChildren = ["fill","center"]; 
+        highBreakdownsPanel.spacing = 10; 
+        highBreakdownsPanel.margins = 0; 
+
+    var highBreakdownText = highBreakdownsPanel.add("statictext", undefined, undefined, {name: "highBreakdownText"}); 
+        highBreakdownText.text = "Fastest / highest score"; 
+
+    // HIGHRECTPANEL
+    // =============
+    var highRectPanel = highBreakdownsPanel.add("panel", undefined, undefined, {name: "highRectPanel"}); 
+        highRectPanel.text = "1: Rectangles "; 
+        highRectPanel.orientation = "row"; 
+        highRectPanel.alignChildren = ["left","top"]; 
+        highRectPanel.spacing = 10; 
+        highRectPanel.margins = 10; 
+
+    var statictext25 = highRectPanel.add("statictext", undefined, undefined, {name: "statictext25"}); 
+        statictext25.text = "Time: "; 
+
+    var highRectTimeText = highRectPanel.add("statictext", undefined, undefined, {name: "highRectTimeText"}); 
+
+    var statictext26 = highRectPanel.add("statictext", undefined, undefined, {name: "statictext26"}); 
+        statictext26.text = "Score:"; 
+
+    var highRectScoreText = highRectPanel.add("statictext", undefined, undefined, {name: "highRectScoreText"}); 
+
+    // HIGHTRANSPANEL
+    // ==============
+    var highTransPanel = highBreakdownsPanel.add("panel", undefined, undefined, {name: "highTransPanel"}); 
+        highTransPanel.text = "2:  Transformations average"; 
+        highTransPanel.orientation = "row"; 
+        highTransPanel.alignChildren = ["left","top"]; 
+        highTransPanel.spacing = 10; 
+        highTransPanel.margins = 10; 
+
+    var statictext27 = highTransPanel.add("statictext", undefined, undefined, {name: "statictext27"}); 
+        statictext27.text = "Time: "; 
+
+    var highTransTimeText = highTransPanel.add("statictext", undefined, undefined, {name: "highTransTimeText"}); 
+
+    var statictext28 = highTransPanel.add("statictext", undefined, undefined, {name: "statictext28"}); 
+        statictext28.text = "Score:"; 
+
+    var highTransScoreText = highTransPanel.add("statictext", undefined, undefined, {name: "highTransScoreText"}); 
+
+    // HIGHEFFPANEL
+    // ============
+    var highEffPanel = highBreakdownsPanel.add("panel", undefined, undefined, {name: "highEffPanel"}); 
+        highEffPanel.text = "3:  Effects average"; 
+        highEffPanel.orientation = "row"; 
+        highEffPanel.alignChildren = ["left","top"]; 
+        highEffPanel.spacing = 10; 
+        highEffPanel.margins = 10; 
+
+    var statictext29 = highEffPanel.add("statictext", undefined, undefined, {name: "statictext29"}); 
+        statictext29.text = "Time: "; 
+
+    var highEffTimeText = highEffPanel.add("statictext", undefined, undefined, {name: "highEffTimeText"}); 
+
+    var statictext30 = highEffPanel.add("statictext", undefined, undefined, {name: "statictext30"}); 
+        statictext30.text = "Score:"; 
+
+    var highEffScoreText = highEffPanel.add("statictext", undefined, undefined, {name: "highEffScoreText"}); 
+
+    // HIGHZOOMPANEL
+    // =============
+    var highZoomPanel = highBreakdownsPanel.add("panel", undefined, undefined, {name: "highZoomPanel"}); 
+        highZoomPanel.text = "4: Zooms average"; 
+        highZoomPanel.orientation = "row"; 
+        highZoomPanel.alignChildren = ["left","top"]; 
+        highZoomPanel.spacing = 10; 
+        highZoomPanel.margins = 10; 
+
+    var statictext31 = highZoomPanel.add("statictext", undefined, undefined, {name: "statictext31"}); 
+        statictext31.text = "Time: "; 
+
+    var highZoomTimeText = highZoomPanel.add("statictext", undefined, undefined, {name: "highZoomTimeText"}); 
+
+    var statictext32 = highZoomPanel.add("statictext", undefined, undefined, {name: "statictext32"}); 
+        statictext32.text = "Score:"; 
+
+    var highZoomScoreText = highZoomPanel.add("statictext", undefined, undefined, {name: "highZoomScoreText"}); 
+
+    // HIGHFILEPANEL
+    // =============
+    var highFilePanel = highBreakdownsPanel.add("panel", undefined, undefined, {name: "highFilePanel"}); 
+        highFilePanel.text = "5: File writes average"; 
+        highFilePanel.orientation = "row"; 
+        highFilePanel.alignChildren = ["left","top"]; 
+        highFilePanel.spacing = 10; 
+        highFilePanel.margins = 10; 
+
+    var statictext33 = highFilePanel.add("statictext", undefined, undefined, {name: "statictext33"}); 
+        statictext33.text = "Time: "; 
+
+    var highFileTimeText = highFilePanel.add("statictext", undefined, undefined, {name: "highFileTimeText"}); 
+
+    var statictext34 = highFilePanel.add("statictext", undefined, undefined, {name: "statictext34"}); 
+        statictext34.text = "Score:"; 
+
+    var highFileScoreText = highFilePanel.add("statictext", undefined, undefined, {name: "highFileScoreText"}); 
+
+    // HIGHBREAKDOWNSPANEL
+    // ===================
+    var divider5 = highBreakdownsPanel.add("panel", undefined, undefined, {name: "divider5"}); 
+        divider5.alignment = "fill"; 
+
+    // HIGHTOTALPANEL
+    // ==============
+    var highTotalPanel = highBreakdownsPanel.add("panel", undefined, undefined, {name: "highTotalPanel"}); 
+        highTotalPanel.text = "Fastest / highest total"; 
+        highTotalPanel.orientation = "row"; 
+        highTotalPanel.alignChildren = ["left","top"]; 
+        highTotalPanel.spacing = 10; 
+        highTotalPanel.margins = 33; 
+
+    var statictext35 = highTotalPanel.add("statictext", undefined, undefined, {name: "statictext35"}); 
+        statictext35.text = "Time: "; 
+
+    var highTotalTimeText = highTotalPanel.add("statictext", undefined, undefined, {name: "highTotalTimeText"}); 
+
+    var statictext36 = highTotalPanel.add("statictext", undefined, undefined, {name: "statictext36"}); 
+        statictext36.text = "Score:"; 
+
+    var highTotalScoreText = highTotalPanel.add("statictext", undefined, undefined, {name: "highTotalScoreText"}); 
+
+    // BUTTONGROUP
+    // ===========
+    var buttonGroup = benchResultsWin.add("group", undefined, {name: "buttonGroup"}); 
+        buttonGroup.orientation = "row"; 
+        buttonGroup.alignChildren = ["left","center"]; 
+        buttonGroup.spacing = 10; 
+        buttonGroup.margins = 0; 
+
+    var closeButton = buttonGroup.add("button", undefined, undefined, {name: "closeButton"}); 
+        closeButton.text = "Close"; 
+        closeButton.onClick = function(){
+            benchResultsWin.close();
             return;
         }
-        if (!text) {
-            dialog.close();
-            return;
+
+    var runAgainButton = buttonGroup.add("button", undefined, undefined, {name: "runAgainButton"}); 
+        runAgainButton.text = "Run again"; 
+        runAgainButton.onClick = function(){
+            benchResultsWin.close();
+            app.activeDocument.close(SaveOptions.DONOTSAVECHANGES);
+            return main();
         }
-        dialog.show();
-        stage.text = text;
-        dialog.update();
-    };
-}
 
-function funcTimer(benchTest) { //executes tests, returns time and score
-    var vars = {
-        name: "",
-        time: 0,
-        score: 0
-    }
-
-    var start = new Date().getTime();
-
-    vars.name = benchTest();
-
-    var end = new Date().getTime();
-
-    vars.time = end - start;
-    vars.score = score(vars.time);
-    return vars;
-}
-
-function score(time) {
-    var scale = 30000; //arbitary, but hopefully interesting for comparison
-    if (time == 0) {
-        return false; //doh... 
-    }
-    return Math.round((1 / time) * scale);
-}
-
-/* _____________________ Tests _________________________
-   _____________________________________________________ 
-   Do a particular type of operation in a regular, sufficiently-
-   complex-to-measure sort of way, return test name
-   */
-
-//______ TEST 1
-function rectanglesTest(obj, progress) {
-    var doc = obj.layer.parent;
-    var rects = [];
-
-    for (var i = 0; i < 40; i++) {
-        rects[i] = [];
-        for (var j = 0; j < 40; j++) {
-            rects[i][j] = doc.pathItems.rectangle(-2, 2, 4, 4);
-            rects[i][j].move(obj, ElementPlacement.PLACEATEND);
-            rects[i][j].translate(j + (i * 6), j * 2);
-            rects[i][j].rotate(j * 2);
-            rects[i][j].fillColor.red = rects[i][j].strokeColor.blue = Math.round(Math.random() * 255);
-            rects[i][j].fillColor.green = rects[i][j].strokeColor.red = Math.round(Math.random() * 255);
-            rects[i][j].fillColor.blue = rects[i][j].strokeColor.green = Math.round(Math.random() * 255);
-        }
-    }
-
-    app.redraw();
-    return "Rectangles test";
-}
-
-//______ TEST 2 
-function transformationsTest(obj, progress) {
-
-    progress("Transformations test");
-    centreObj(obj);
-
-    for (var i = 0; i < obj.pageItems.length; i++) { // 220,000 points
-        //rotate
-        obj.pageItems[i].rotate(i * 3.7);
-        obj.pageItems[i].resize(75, 65);
-        obj.pageItems[i].translate(1.15 * i, 1.15 * i);
-        //obj.pageItems[i].zOrder( ZOrderMethod.BRINGFORWARD ); //Is going to mutate the obj.pageItems order while we iterate through it? Not sure...
-    }
-    app.redraw();
-    return "Transformations test";
-}
-
-//______ TEST 3
-function effectsTest(obj, progress) {
-    progress("Effects test");
-    /*Thanks m1b, femkeblanco, Silly-V, CarlosCanto 
-    https://community.adobe.com/t5/illustrator/pageitem-applyeffect-liveeffectxml/m-p/7315221
-    https://community.adobe.com/t5/illustrator/scripting-live-effects/m-p/11744702 
-    https://github.com/mark1bean/ai-live-effect-functions/blob/master/README.md
-    */
-
-    var efct = '<LiveEffect name="Adobe Deform"><Dict data="R DeformValue 0.45 R DeformVert 0 B Rotate 0 I DeformStyle 1 R DeformHoriz 0 "/></LiveEffect>';
-    obj.applyEffect(efct);
-
-    app.redraw();
-    return "Effects test";
-}
-
-//______ TEST 4
-function zoomTest(doc, progress) {
-    progress("Zoom test");
-    var view = doc.views[0];
-    view.zoom = 1;
-
-    for (var a = 1; a > 0.3; a -= 0.01) {
-        view.zoom = a;
-        app.redraw();
-    }
-
-    for (var a = 0.3; a <= 1; a += 0.01) {
-        view.zoom = a;
-        app.redraw();
-    }
-
-    return "Zoom test";
-}
-
-//______ TEST 5
-function fileWriteTest(doc, progress) {
-    progress("File write test");
-    //write a few files, delete files
-
-    return "File write test";
+    benchResultsWin.show();
 }
