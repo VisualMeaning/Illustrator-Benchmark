@@ -1322,3 +1322,83 @@ function displayResults(tests, results, pastResults, info, runCount) {
 
     benchResultsWin.show();
 }
+
+
+/*
+    //Saved preferences for the above pair of variables coresponding to this file on this computer?
+        var fileName = "Export preferences.txt";
+        var preferencesFile = File(doc.path +"/"+ fileName);
+        preferencesFile.encoding = 'UTF8',
+        preferencesFile.lineFeed = 'Windows'; 
+        preferencesFile.open('r',undefined,undefined);
+        var contents = preferencesFile.read();
+        var preferences = [];// will hold the data
+        if( contents ){              
+                var lines = contents.split('\n');
+                var keys = lines[0].split(':.:'); // get the heads 
+                for(var i = 1; i < lines.length; i++){ 
+                          var obj = {}; // temp object
+                          var cells = lines[i].split(':.:');// get the cells
+                          // assign them to the heads
+                          obj[keys[0]] = cells[0]; // computer
+                          obj[keys[1]] = cells[1]; // filename
+                          obj[keys[2]] = cells[2]; // location
+                          obj[keys[3]] = cells[3]; // parentFolder
+                          obj[keys[4]] = cells[4]; // gifFolder
+   
+                          preferences.push(obj); // add to data
+                 }       
+
+                for(var i = 0; i < preferences.length; i++){
+                         if(preferences[i].computer == $.getenv("COMPUTERNAME")){// Actually let's try asuming that ai folders in the same folder should share the same export settings && preferences[i].filename == doc.name){ 
+                                location = preferences[i].location;
+                                parentFolder = preferences[i].parentFolder;
+                                gifFolder = preferences[i].gifFolder;
+                        }
+                }
+        }//end prefs        
+
+    //Save prefs if location or parentFolder have been changed from defaults.
+        if( location != doc.path || parentFolder != "ImageMagick" ){
+                TakeNoteFutureGenerations_THISIsHowToClearAFile:{//argh!
+                        preferencesFile.open( "w", "TEXT", $.getenv("USER") ); //It's all in the 'w'
+                        preferencesFile.write("");
+                        preferencesFile.close();
+                }
+                logInfo( "computer:.:filename:.:location:.:parentFolder:.:gifFolder", preferencesFile ); //headers
+                findThisFileOnThisComputer: { //breaks if existing preference entry for this file on this computer is found, otherwise adds a new entry
+                        for(var i = 0; i < preferences.length; i++){ 
+                                if( preferences[i].computer == $.getenv( "COMPUTERNAME" )  && preferences[i].filename == doc.name){ //same computer, same file
+                                        preferences[i].location = location;
+                                        preferences[i].parentFolder = parentFolder;
+                                        preferences[i].gifFolder = gifFolder;
+                                        break findThisFileOnThisComputer;
+                                }
+                        }//No break in the loop? let's make a new preference entry then.
+                        var obj = {}; 
+                        obj.computer = $.getenv( "COMPUTERNAME" );
+                        obj.filename = doc.name; 
+                        obj.location = location; 
+                        obj.parentFolder = parentFolder;
+                        obj.gifFolder = gifFolder;
+                        preferences.push( obj );
+                }
+                            
+                for(var i = 0; i < preferences.length; i++){ 
+                        if( !(File (doc.path + "/" + preferences[i].filename).exists) ){
+                                preferences.splice(i,1); //if the file isn't in this folder any more, let's get rid of the preference
+                        }
+                }
+                 for(var i = 0; i < preferences.length; i++){  //Finally, write all those saved preferences back to the file
+                       if( preferences[i].computer == undefined || preferences[i].filename == undefined) continue;
+                       logInfo( preferences[i].computer + ":.:" + preferences[i].filename + ":.:" + preferences[i].location + ":.:" + preferences[i].parentFolder + ":.:" + preferences[i].gifFolder, preferencesFile);
+                 }
+        }
+
+function logInfo(Txt, bat){  
+    bat.open( "e", "TEXT", $.getenv("USER"));  bat.seek(0,2);   
+    $.os.search(/windows/i)  != -1 ? bat.lineFeed = 'windows'  : bat.lineFeed = 'macintosh';  
+    bat.writeln(Txt);  
+    bat.close();  
+}        
+        */
