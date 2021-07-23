@@ -59,17 +59,136 @@ if (!Date.prototype.toISOString) {
 
 main();
 
-function main(runs) {
-    var runCount = runs | 0;
-    var pastResults = getPastResults(); //average, mean, time delta, highest on record for individual tests and totals
+function getDoc(docName){
+    var doc;
 
-    var info = infoIU(pastResults); //factors that might affect the results - to append to the results for this run
+    if(app.activeDocument){ //doc open?
+        if(doc.name == docName){ //right name?
+            return doc;
+        }
+    } 
+    doc = app.documents.add(); //new doc then
+    doc.name = docName;
 
-    if (!info) {
-        return
+    var path = Folder.selectDialog( //where to save it...
+        "The benchmark needs to make a new document to run in.\
+         \nPlease choose a location to save it. \
+         \rIf you select a folder, the script will automatically\
+         \nsave the results to a CSV file in that same location.\
+         \rRunning the benchmark additional times from the same\
+         \ndocument will append entries to the CSV file\
+         \nfor you to analyse in Excel.\
+         \rIf you click cancel, you can still run the benchmark but\
+         \nthe results won't be saved.", $.HOMEPATH);
+    if( !path || path == null || !saveLocation.exists ){
+        return doc; //oh, not saving it then...
     }
+    var file = new File(path + "/" + docName + ".ai"); 
+    
+    // Preflight access rights
+	if (file.open("w")) {
+		file.close();
+        doc.saveAs( file, new IllustratorSaveOptions());
+	}
+	else {
+		throw new Error('Access is denied');
+	}
 
-    var doc = app.documents.add();
+    return doc; //here's a doc that has been saved (ie. it has a path)
+}
+
+function getCSVContentsAsArray( fullPath ){
+    var csvFile = File( fullPath );
+    if(!csvFile.exists){
+        return false;
+    }
+    csvFile.encoding = 'UTF8',
+    csvFile.lineFeed = 'Windows'; //TODO for mac??
+    csvFile.open('r',undefined,undefined);
+    return csvFile.read();
+}
+
+function getDataFromCsvContents
+( arr ){//return some sort of data structure for past results
+
+    var fileName = "Export preferences.txt";
+    var preferencesFile = File(doc.path +"/"+ fileName);
+    preferencesFile.encoding = 'UTF8',
+    preferencesFile.lineFeed = 'Windows'; 
+    preferencesFile.open('r',undefined,undefined);
+    var contents = preferencesFile.read();
+    var preferences = [];// will hold the data
+    if( contents ){              
+        var lines = contents.split('\n');
+        var keys = lines[0].split(':.:'); // get the heads 
+        for(var i = 1; i < lines.length; i++){ 
+            var obj = {}; // temp object
+            var cells = lines[i].split(':.:');// get the cells
+            // assign them to the heads
+            obj[keys[0]] = cells[0]; // computer
+            obj[keys[1]] = cells[1]; // filename
+            obj[keys[2]] = cells[2]; // location
+            obj[keys[3]] = cells[3]; // parentFolder
+            obj[keys[4]] = cells[4]; // gifFolder
+
+            preferences.push(obj); // add to data
+        }       
+
+        for(var i = 0; i < preferences.length; i++){
+            if(preferences[i].computer == $.getenv("COMPUTERNAME")){// Actually let's try asuming that ai folders in the same folder should share the same export settings && preferences[i].filename == doc.name){ 
+                location = preferences[i].location;
+                parentFolder = preferences[i].parentFolder;
+                gifFolder = preferences[i].gifFolder;
+            }
+        }
+    }//end prefs  */
+}
+
+function main(runs) {
+    var docName = "Illustrator Benchmark Doc.ai";
+    var doc = getDoc(docName); //try and get a saved doc (with a path), or an unsaved one if prefered. 
+
+    var csvFilename = "Illustrator Benchmark Data.csv";
+    var csvContents = doc.path ?
+        getCSVContentsAsArray(doc.path + "/" + csvFilename) :
+        false; //if there's an appropriately named csv file already in this location, get the contents 
+    var pastData = csvContents ? 
+        getDataFromCsvContents(csvContents) : 
+        false;
+    //
+
+
+
+
+
+/*
+Is there a doc open? named "Illustrator Benchnmark test.ai" ?
+    in the same directory, is there a file named "Illustrator Benchmark Data.csv"?
+        import data
+        array of data valid? 
+            get info(user input, not env vars) for pre-populating info input screen
+    .   .   
+    new csv data file
+.   new doc
+
+info screen  [environment variables][user input variables]
+past runs[ date,results[], info[userInput[],envVars[]]]
+if (!pastRuns[i].info) pastRuns[i].info = (search for earlier info)
+
+recurse backwards through 
+
+if data is different 
+
+    var runCount = runs | 0;
+    //var pastResults = getPastResults(); //average, mean, time delta, highest on record for individual tests and totals
+
+    //var info = infoIU(pastResults); //factors that might affect the results - to append to the results for this run
+
+    //if (!info) {
+    //    return
+   // }
+
+   // var doc = app.documents.add();
     app.executeMenuCommand('doc-color-rgb'); //TODO might be interesting to compare results in CYMK!
 
     var obj = doc.groupItems.add(); //The art item we'll add complexity to in the tests, to see what kind of impact it has on the benchmark
@@ -104,9 +223,9 @@ function main(runs) {
 
     progress(false);
 
-    displayResults(tests, testTotals, pastResults, info, runCount, progress); //Tell us what happened
+    displayResuts(tests, testTotals, pastResults, info, runCount); //Tell us what happened
 
-    doc.close(SaveOptions.DONOTSAVECHANGES);
+    app.activeDocument.close(SaveOptions.DONOTSAVECHANGES);
 };
 
 function sumTests(tests) {
@@ -205,7 +324,7 @@ function recordResults(tests, testTotals, pastResults, info) {
 /* _____________________ Tests _________________________
    _____________________________________________________ 
    Do a particular type of operation in a regular, sufficiently-
-   complex-to-measure sort of way, return test name
+   complex-to-take-a-few-seconds-to-complete sort of way, return test name
    */
 
 //______ TEST 1
@@ -1317,14 +1436,32 @@ function displayResults(tests, results, pastResults, info, runCount) {
         runAgainButton.onClick = function(){
             benchResultsWin.close();
             app.activeDocument.close(SaveOptions.DONOTSAVECHANGES);
+            app.redraw();
             return main();
         }
 
     benchResultsWin.show();
 }
 
-
 /*
+Is there a doc open? named "Illustrator Benchnmark test.ai" ?
+    in the same directory, is there a file named "Illustrator Benchmark Data.csv"?
+        import data
+        array of data valid? 
+            get info(user input, not env vars) for pre-populating info input screen
+    .   .   
+    new csv data file
+.   new doc
+
+info screen  [environment variables][user input variables]
+past runs[ date,results[], info[userInput[],envVars[]]]
+if (!pastRuns[i].info) pastRuns[i].info = (search for earlier info)
+
+recurse backwards through 
+
+if data is different 
+
+
     //Saved preferences for the above pair of variables coresponding to this file on this computer?
         var fileName = "Export preferences.txt";
         var preferencesFile = File(doc.path +"/"+ fileName);
