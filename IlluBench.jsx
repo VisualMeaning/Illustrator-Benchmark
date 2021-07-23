@@ -59,91 +59,6 @@ if (!Date.prototype.toISOString) {
 
 main();
 
-function getDoc(docName){
-    var doc;
-
-    if(app.activeDocument){ //doc open?
-        if(doc.name == docName){ //right name?
-            return doc;
-        }
-    } 
-    doc = app.documents.add(); //new doc then
-    doc.name = docName;
-
-    var path = Folder.selectDialog( //where to save it...
-        "The benchmark needs to make a new document to run in.\
-         \nPlease choose a location to save it. \
-         \rIf you select a folder, the script will automatically\
-         \nsave the results to a CSV file in that same location.\
-         \rRunning the benchmark additional times from the same\
-         \ndocument will append entries to the CSV file\
-         \nfor you to analyse in Excel.\
-         \rIf you click cancel, you can still run the benchmark but\
-         \nthe results won't be saved.", $.HOMEPATH);
-    if( !path || path == null || !saveLocation.exists ){
-        return doc; //oh, not saving it then...
-    }
-    var file = new File(path + "/" + docName + ".ai"); 
-    
-    // Preflight access rights
-	if (file.open("w")) {
-		file.close();
-        doc.saveAs( file, new IllustratorSaveOptions());
-	}
-	else {
-		throw new Error('Access is denied');
-	}
-
-    return doc; //here's a doc that has been saved (ie. it has a path)
-}
-
-function getCSVContentsAsArray( fullPath ){
-    var csvFile = File( fullPath );
-    if(!csvFile.exists){
-        return false;
-    }
-    csvFile.encoding = 'UTF8',
-    csvFile.lineFeed = 'Windows'; //TODO for mac??
-    csvFile.open('r',undefined,undefined);
-    return csvFile.read();
-}
-
-function getDataFromCsvContents
-( arr ){//return some sort of data structure for past results
-
-    var fileName = "Export preferences.txt";
-    var preferencesFile = File(doc.path +"/"+ fileName);
-    preferencesFile.encoding = 'UTF8',
-    preferencesFile.lineFeed = 'Windows'; 
-    preferencesFile.open('r',undefined,undefined);
-    var contents = preferencesFile.read();
-    var preferences = [];// will hold the data
-    if( contents ){              
-        var lines = contents.split('\n');
-        var keys = lines[0].split(':.:'); // get the heads 
-        for(var i = 1; i < lines.length; i++){ 
-            var obj = {}; // temp object
-            var cells = lines[i].split(':.:');// get the cells
-            // assign them to the heads
-            obj[keys[0]] = cells[0]; // computer
-            obj[keys[1]] = cells[1]; // filename
-            obj[keys[2]] = cells[2]; // location
-            obj[keys[3]] = cells[3]; // parentFolder
-            obj[keys[4]] = cells[4]; // gifFolder
-
-            preferences.push(obj); // add to data
-        }       
-
-        for(var i = 0; i < preferences.length; i++){
-            if(preferences[i].computer == $.getenv("COMPUTERNAME")){// Actually let's try asuming that ai folders in the same folder should share the same export settings && preferences[i].filename == doc.name){ 
-                location = preferences[i].location;
-                parentFolder = preferences[i].parentFolder;
-                gifFolder = preferences[i].gifFolder;
-            }
-        }
-    }//end prefs  */
-}
-
 function main(runs) {
     var docName = "Illustrator Benchmark Doc.ai";
     var doc = getDoc(docName); //try and get a saved doc (with a path), or an unsaved one if prefered. 
@@ -155,29 +70,7 @@ function main(runs) {
     var pastData = csvContents ? 
         getDataFromCsvContents(csvContents) : 
         false;
-    //
 
-
-
-
-
-/*
-Is there a doc open? named "Illustrator Benchnmark test.ai" ?
-    in the same directory, is there a file named "Illustrator Benchmark Data.csv"?
-        import data
-        array of data valid? 
-            get info(user input, not env vars) for pre-populating info input screen
-    .   .   
-    new csv data file
-.   new doc
-
-info screen  [environment variables][user input variables]
-past runs[ date,results[], info[userInput[],envVars[]]]
-if (!pastRuns[i].info) pastRuns[i].info = (search for earlier info)
-
-recurse backwards through 
-
-if data is different 
 
     var runCount = runs | 0;
     //var pastResults = getPastResults(); //average, mean, time delta, highest on record for individual tests and totals
@@ -228,43 +121,81 @@ if data is different
     app.activeDocument.close(SaveOptions.DONOTSAVECHANGES);
 };
 
-function sumTests(tests) {
-    var totals = {
-        time: 0,
-        score: 0
+function getDoc(docName){
+    var doc;
+
+    if(app.activeDocument){ //doc open?
+        if(doc.name == docName){ //right name?
+            return doc;
+        }
+    } 
+    doc = app.documents.add(); //new doc then
+    doc.name = docName;
+
+    var path = Folder.selectDialog( //where to save it...
+        "The benchmark needs to make a new document to run in.\
+         \nPlease choose a location to save it. \
+         \rIf you select a folder, the script will automatically\
+         \nsave the results to a CSV file in that same location.\
+         \rRunning the benchmark additional times from the same\
+         \ndocument will append entries to the CSV file\
+         \nfor you to analyse in Excel.\
+         \rIf you click cancel, you can still run the benchmark but\
+         \nthe results won't be saved.", $.HOMEPATH);
+    if( !path || path == null || !saveLocation.exists ){
+        return doc; //oh, not saving it then...
     }
-    for (var i = 0; i < tests.length; i++) { //sum the total time and scores from all the tests
-        totals.time += tests[i].time;
-        totals.score += tests[i].score | 0;
-    }
-    return totals;
+    var file = new File(path + "/" + docName + ".ai"); 
+    
+    // Preflight access rights
+	if (file.open("w")) {
+		file.close();
+        doc.saveAs( file, new IllustratorSaveOptions());
+	}
+	else {
+		throw new Error('Access is denied');
+	}
+
+    return doc; //here's a doc that has been saved (ie. it has a path)
 }
 
-function funcTimer(benchTest) { //executes tests, returns time and score
-    var vars = {
-        name: "",
-        time: 0,
-        score: 0
+function getCSVContentsAsArray( fullPath ){
+    var csvFile = File( fullPath );
+    if(!csvFile.exists){
+        return false;
     }
-
-    var start = new Date().getTime();
-
-    vars.name = benchTest();
-
-    var end = new Date().getTime();
-
-    vars.time = end - start;
-    vars.score = score(vars.time);
-    return vars;
+    csvFile.encoding = 'UTF8',
+    csvFile.lineFeed = 'Windows'; //TODO for mac??
+    csvFile.open('r',undefined,undefined);
+    return csvFile.read();
 }
 
-function score(time) {
-    var scale = 5000000; //arbitary, but hopefully interesting for comparison
-    if (time <= 1) {
-        return false; //doh... 
+function getDataFromCsvContents( arr ){//return some sort of data structure for past results
+    var contents = arr;
+    var results = [];// will hold the data 
+    var rows = contents.split('\n');
+    var keys = rows[0].split('\t'); // get the heads 
+    for(var i = 1; i < rows.length; i++){ 
+        var obj = {}; // temp object
+        var cells = rows[i].split(':.:');// get the cells
+        // assign them to the heads
+        obj[keys[0]] = cells[0]; // computer
+        obj[keys[1]] = cells[1]; // filename
+        obj[keys[2]] = cells[2]; // location
+        obj[keys[3]] = cells[3]; // parentFolder
+        obj[keys[4]] = cells[4]; // gifFolder
+
+        results.push(obj); // add to data
+    }       
+
+    for(var i = 0; i < results.length; i++){
+        if(results[i].computer == $.getenv("COMPUTERNAME")){// Actually let's try asuming that ai folders in the same folder should share the same export settings && results[i].filename == doc.name){ 
+            location = results[i].location;
+            parentFolder = results[i].parentFolder;
+            gifFolder = results[i].gifFolder;
+        }
     }
-    return Math.round((1 / time) * scale );
-    //return "--- time: " + time + ", 1/time: " + 1/time + ", 1/time *30000: " + (1/time) *30000;
+    return results[];
 }
 
 function getPastResults() {
@@ -314,6 +245,45 @@ function getPastResults() {
         }
     }
     return vars; //average, mean, time delta, highest on record for individual tests and totals
+}
+
+function sumTests(tests) {
+    var totals = {
+        time: 0,
+        score: 0
+    }
+    for (var i = 0; i < tests.length; i++) { //sum the total time and scores from all the tests
+        totals.time += tests[i].time;
+        totals.score += tests[i].score | 0;
+    }
+    return totals;
+}
+
+function funcTimer(benchTest) { //executes tests, returns time and score
+    var vars = {
+        name: "",
+        time: 0,
+        score: 0
+    }
+
+    var start = new Date().getTime();
+
+    vars.name = benchTest();
+
+    var end = new Date().getTime();
+
+    vars.time = end - start;
+    vars.score = score(vars.time);
+    return vars;
+}
+
+function score(time) {
+    var scale = 5000000; //arbitary, but hopefully interesting for comparison
+    if (time <= 1) {
+        return false; //doh... 
+    }
+    return Math.round((1 / time) * scale );
+    //return "--- time: " + time + ", 1/time: " + 1/time + ", 1/time *30000: " + (1/time) *30000;
 }
 
 function recordResults(tests, testTotals, pastResults, info) {
@@ -1460,40 +1430,6 @@ if (!pastRuns[i].info) pastRuns[i].info = (search for earlier info)
 recurse backwards through 
 
 if data is different 
-
-
-    //Saved preferences for the above pair of variables coresponding to this file on this computer?
-        var fileName = "Export preferences.txt";
-        var preferencesFile = File(doc.path +"/"+ fileName);
-        preferencesFile.encoding = 'UTF8',
-        preferencesFile.lineFeed = 'Windows'; 
-        preferencesFile.open('r',undefined,undefined);
-        var contents = preferencesFile.read();
-        var preferences = [];// will hold the data
-        if( contents ){              
-                var lines = contents.split('\n');
-                var keys = lines[0].split(':.:'); // get the heads 
-                for(var i = 1; i < lines.length; i++){ 
-                          var obj = {}; // temp object
-                          var cells = lines[i].split(':.:');// get the cells
-                          // assign them to the heads
-                          obj[keys[0]] = cells[0]; // computer
-                          obj[keys[1]] = cells[1]; // filename
-                          obj[keys[2]] = cells[2]; // location
-                          obj[keys[3]] = cells[3]; // parentFolder
-                          obj[keys[4]] = cells[4]; // gifFolder
-   
-                          preferences.push(obj); // add to data
-                 }       
-
-                for(var i = 0; i < preferences.length; i++){
-                         if(preferences[i].computer == $.getenv("COMPUTERNAME")){// Actually let's try asuming that ai folders in the same folder should share the same export settings && preferences[i].filename == doc.name){ 
-                                location = preferences[i].location;
-                                parentFolder = preferences[i].parentFolder;
-                                gifFolder = preferences[i].gifFolder;
-                        }
-                }
-        }//end prefs        
 
     //Save prefs if location or parentFolder have been changed from defaults.
         if( location != doc.path || parentFolder != "ImageMagick" ){
