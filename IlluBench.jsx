@@ -1,5 +1,4 @@
-/*
-    Adobe Illustrator Benchmark script
+/*  Adobe Illustrator Benchmark script
     MarkN 2021
     visual-meaning.com
 
@@ -24,6 +23,8 @@
         reading data file back in
             analytics
 */
+
+// @target illustrator
 
 if (!Date.prototype.toISOString) {
     (function() {
@@ -60,26 +61,26 @@ if (!Date.prototype.toISOString) {
 main();
 
 function main(runs) {
+    var runCount = runs || 0;
+
     var docName = "Illustrator Benchmark Doc.ai";
     var doc = getDoc(docName); //try and get a saved doc (with a path), or an unsaved one if prefered. 
 
     var csvFilename = "Illustrator Benchmark Data.csv";
-    var csvContents = doc.path ?
-        getCSVContentsAsArray(doc.path + "/" + csvFilename) :
+    var csvFile = doc.path ?
+        getCSVFile(doc.path + "/" + csvFilename) :
         false; //if there's an appropriately named csv file already in this location, get the contents 
-    var pastData = csvContents ? 
-        getDataFromCsvContents(csvContents) : 
+    var pastData = csvFile ? 
+        getDataFromCsvContents(csvFile.read()) : 
         false;
 
-
-    var runCount = runs | 0;
     //var pastResults = getPastResults(); //average, mean, time delta, highest on record for individual tests and totals
 
-    //var info = infoIU(pastResults); //factors that might affect the results - to append to the results for this run
+    var info = infoIU(pastData,runCount); //factors that might affect the results - to append to the results for this run
 
-    //if (!info) {
-    //    return
-   // }
+    if (!info) {
+       return
+    }
 
    // var doc = app.documents.add();
     app.executeMenuCommand('doc-color-rgb'); //TODO might be interesting to compare results in CYMK!
@@ -112,11 +113,13 @@ function main(runs) {
 
     var testTotals = sumTests(tests); //total time and score for this test
 
-    recordResults(tests, testTotals, pastResults, info); //write time/score & info to illuBench record.txt file
+    if(csvFile){
+        recordResults(csvFile, tests, testTotals, pastData, info); //write time/score & info to illuBench record.txt file
+    }
 
     progress(false);
 
-    displayResuts(tests, testTotals, pastResults, info, runCount); //Tell us what happened
+    displayResuts(tests, testTotals, pastData, info, runCount); //Tell us what happened
 
     app.activeDocument.close(SaveOptions.DONOTSAVECHANGES);
 };
@@ -159,7 +162,7 @@ function getDoc(docName){
     return doc; //here's a doc that has been saved (ie. it has a path)
 }
 
-function getCSVContentsAsArray( fullPath ){
+function getCSVFile( fullPath ){
     var csvFile = File( fullPath );
     if(!csvFile.exists){
         return false;
@@ -167,35 +170,48 @@ function getCSVContentsAsArray( fullPath ){
     csvFile.encoding = 'UTF8',
     csvFile.lineFeed = 'Windows'; //TODO for mac??
     csvFile.open('r',undefined,undefined);
-    return csvFile.read();
+    return csvFile;
 }
 
 function getDataFromCsvContents( arr ){//return some sort of data structure for past results
     var contents = arr;
+    var delimiter = '\t'
     var results = [];// will hold the data 
     var rows = contents.split('\n');
-    var keys = rows[0].split('\t'); // get the heads 
+    var keys = rows[0].split(delimiter); // get the heads 
+
     for(var i = 1; i < rows.length; i++){ 
-        var obj = {}; // temp object
-        var cells = rows[i].split(':.:');// get the cells
+
+        var tempObj = {}; // temp object
+        var cells = rows[i].split(delimiter);// get the cells
         // assign them to the heads
-        obj[keys[0]] = cells[0]; // computer
-        obj[keys[1]] = cells[1]; // filename
-        obj[keys[2]] = cells[2]; // location
-        obj[keys[3]] = cells[3]; // parentFolder
-        obj[keys[4]] = cells[4]; // gifFolder
-
-        results.push(obj); // add to data
-    }       
-
-    for(var i = 0; i < results.length; i++){
-        if(results[i].computer == $.getenv("COMPUTERNAME")){// Actually let's try asuming that ai folders in the same folder should share the same export settings && results[i].filename == doc.name){ 
-            location = results[i].location;
-            parentFolder = results[i].parentFolder;
-            gifFolder = results[i].gifFolder;
+        for(var j=0; j< keys.length;j++){
+            tempObj[keys[j]] = cells[j]; //TODO differentiate between results and info
         }
-    }
-    return results[];
+
+        var resultsObj = {};
+        for(var k in obj){
+            switch( k ){
+                case /^date/:
+                    resultsObj["date"]=obj[k];
+                    break;
+                case /^test/:
+                    resultsObj["tests"][k]=obj[k];
+                    break;
+                case /^env/:
+                    resultsObj["env"][k]=obj[k];
+                    break;
+                case /^info/:
+                    resultsObj["info"][k]=obj[k];
+                    break;
+                default:
+                    $.writeln( $line + " - " + k + " : " + obj[k] + " fell through the switch statement");
+                    break;
+            }
+        }
+        results.push(resultsObj); // add to data
+    }       
+    return results;
 }
 
 function getPastResults() {
@@ -286,13 +302,74 @@ function score(time) {
     //return "--- time: " + time + ", 1/time: " + 1/time + ", 1/time *30000: " + (1/time) *30000;
 }
 
-function recordResults(tests, testTotals, pastResults, info) {
-    //write results to file
-
+function objKeysToString(obj, del){
+    var str;
+    if( typeof obj === 'object' && obj != null){
+        for(var key in obj){
+            objToString(key, del)
+        }
+    }else{
+        var keyName = {obj};
+        for(var key in keyName){
+            str+=key;
+        }
+    }
+    return str;
 }
+
+function objValsToString(obj, del){
+    var str;
+    if( typeof obj === 'object' && obj != null){
+        for(var key in obj){
+            objToString(obj[key], del)
+        }
+    }else{
+        str += obj.toString() + del;
+    }
+    return str;
+}
+
+function recordResults(file, tests, testTotals, pastResults, info) {
+    //write results to file
+    //tests[i].name, time, score
+    //testTotals.time, score
+    //pastResults[i].tests, env, info
+    //test.tests + testTotals, info.env, info
+    var del = "\t";
+    writeToCSV( "---------TODO ____________, file");
+    var headers =  "date"+ 
+                objKeysToString(tests,del) + 
+                objKeysToString(testTotals,del) + 
+                objKeysToString(info,del) + 
+                "\n";
+                
+    var row1 =  "info.date + 
+                objValsToString(tests,del) + 
+                objValsToString(testTotals,del) + 
+                objValsToString(info) + 
+                "\n";
+    
+    var oldRows = pastResults?
+        function(){
+            var str;
+            for(var i = 0; i<pastResults.length;i++){
+                str += objValsToString( pastResults[i],del) + "/n";
+            }
+            return str;
+        } : "";
+    writeToCSV( headers + row1 + oldRows, file);
+}
+
+function writeToCSV(Txt, csvFile){  
+    csvFile.open( "e", "TEXT", $.getenv("USER"));  csvFile.seek(0,2);   
+    $.os.search(/windows/i)  != -1 ? csvFile.lineFeed = 'windows'  : csvFile.lineFeed = 'macintosh';  
+    csvFile.writeln(Txt);  
+    csvFile.close();  
+} 
 
 /* _____________________ Tests _________________________
    _____________________________________________________ 
+   _____________________________________________________
    Do a particular type of operation in a regular, sufficiently-
    complex-to-take-a-few-seconds-to-complete sort of way, return test name
    */
@@ -327,9 +404,9 @@ function transformationsTest(obj, progress) {
 
     for (var i = 0; i < obj.pageItems.length; i++) { // 220,000 points
         //rotate
-        obj.pageItems[i].rotate(i * 2);
+        obj.pageItems[i].rotate(i * 2.11);
         obj.pageItems[i].resize(111, 188);
-  //      obj.pageItems[i].translate(0.03 * i, 0.05 * i);
+        //obj.pageItems[i].translate(0.03 * i, 0.05 * i);
         //obj.pageItems[i].zOrder( ZOrderMethod.BRINGFORWARD ); //Is going to mutate the obj.pageItems order while we iterate through it? Not sure...
     }
     centreObj(obj);
@@ -347,10 +424,6 @@ function effectsTest(obj, progress) {
     */
     var i=0;
     var efct = '<LiveEffect name="Adobe Deform"><Dict data="R DeformValue 0.45 R DeformVert 0 B Rotate 0 I DeformStyle 1 R DeformHoriz 0 "/></LiveEffect>';
-
-    // (function(){ 
-    //     return '<LiveEffect name="Adobe Deform"><Dict data="R DeformValue '+0.45+' R DeformVert 0 B Rotate 0 I DeformStyle 1 R DeformHoriz 0 "/></LiveEffect>';
-    // });
 
     for ( var i = 0; i < obj.pageItems.length; i+=25) { 
         obj.pageItems[i].applyEffect(efct);
@@ -699,8 +772,6 @@ function infoIU() { //What factors might be contributing to the benchmark times?
     edittext1.preferredSize.height = 79;
     edittext1.alignment = ["fill", "center"];
 
-    // PANEL1
-    // ======
     var divider3 = panel1.add("panel", undefined, undefined, {
         name: "divider3"
     });
@@ -1466,12 +1537,5 @@ if data is different
                        if( preferences[i].computer == undefined || preferences[i].filename == undefined) continue;
                        logInfo( preferences[i].computer + ":.:" + preferences[i].filename + ":.:" + preferences[i].location + ":.:" + preferences[i].parentFolder + ":.:" + preferences[i].gifFolder, preferencesFile);
                  }
-        }
-
-function logInfo(Txt, bat){  
-    bat.open( "e", "TEXT", $.getenv("USER"));  bat.seek(0,2);   
-    $.os.search(/windows/i)  != -1 ? bat.lineFeed = 'windows'  : bat.lineFeed = 'macintosh';  
-    bat.writeln(Txt);  
-    bat.close();  
-}        
+        }       
         */
