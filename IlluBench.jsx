@@ -74,7 +74,7 @@ function main(runs) {
         getDataFromCsvContents(csvFile.read()) : 
         false;
 
-    //var pastResults = getPastResults(); //average, mean, time delta, highest on record for individual tests and totals
+    //var pastResults = analyseResults(); //average, mean, time delta, highest on record for individual tests and totals
 
     var info = infoIU(pastData,runCount); //factors that might affect the results - to append to the results for this run
 
@@ -122,252 +122,9 @@ function main(runs) {
     displayResuts(tests, testTotals, pastData, info, runCount); //Tell us what happened
 
     app.activeDocument.close(SaveOptions.DONOTSAVECHANGES);
-};
+}//FIN
 
-function getDoc(docName){
-    var doc;
-
-    if(app.activeDocument){ //doc open?
-        if(doc.name == docName){ //right name?
-            return doc;
-        }
-    } 
-    doc = app.documents.add(); //new doc then
-    doc.name = docName;
-
-    var path = Folder.selectDialog( //where to save it...
-        "The benchmark needs to make a new document to run in.\
-         \nPlease choose a location to save it. \
-         \rIf you select a folder, the script will automatically\
-         \nsave the results to a CSV file in that same location.\
-         \rRunning the benchmark additional times from the same\
-         \ndocument will append entries to the CSV file\
-         \nfor you to analyse in Excel.\
-         \rIf you click cancel, you can still run the benchmark but\
-         \nthe results won't be saved.", $.HOMEPATH);
-    if( !path || path == null || !saveLocation.exists ){
-        return doc; //oh, not saving it then...
-    }
-    var file = new File(path + "/" + docName + ".ai"); 
-    
-    // Preflight access rights
-	if (file.open("w")) {
-		file.close();
-        doc.saveAs( file, new IllustratorSaveOptions());
-	}
-	else {
-		throw new Error('Access is denied');
-	}
-
-    return doc; //here's a doc that has been saved (ie. it has a path)
-}
-
-function getCSVFile( fullPath ){
-    var csvFile = File( fullPath );
-    if(!csvFile.exists){
-        return false;
-    }
-    csvFile.encoding = 'UTF8',
-    csvFile.lineFeed = 'Windows'; //TODO for mac??
-    csvFile.open('r',undefined,undefined);
-    return csvFile;
-}
-
-function getDataFromCsvContents( arr ){//return some sort of data structure for past results
-    var contents = arr;
-    var delimiter = '\t'
-    var results = [];// will hold the data 
-    var rows = contents.split('\n');
-    var keys = rows[0].split(delimiter); // get the heads 
-
-    for(var i = 1; i < rows.length; i++){ 
-
-        var tempObj = {}; // temp object
-        var cells = rows[i].split(delimiter);// get the cells
-        // assign them to the heads
-        for(var j=0; j< keys.length;j++){
-            tempObj[keys[j]] = cells[j]; //TODO differentiate between results and info
-        }
-
-        var resultsObj = {};
-        for(var k in obj){
-            switch( k ){
-                case /^date/:
-                    resultsObj["date"]=obj[k];
-                    break;
-                case /^test/:
-                    resultsObj["tests"][k]=obj[k];
-                    break;
-                case /^env/:
-                    resultsObj["env"][k]=obj[k];
-                    break;
-                case /^info/:
-                    resultsObj["info"][k]=obj[k];
-                    break;
-                default:
-                    $.writeln( $line + " - " + k + " : " + obj[k] + " fell through the switch statement");
-                    break;
-            }
-        }
-        results.push(resultsObj); // add to data
-    }       
-    return results;
-}
-
-function getPastResults() {
-    //read from file - from the set of all past file runs
-    var vars = {
-        totals: {
-            average: 0,
-            mean: 0,
-            timeDelta: 0,
-            recordTime: 0,
-            recordScore: 0
-        },
-        rectangles: {
-            average: 0,
-            mean: 0,
-            timeDelta: 0,
-            recordTime: 0,
-            recordScore: 0
-        },
-        transformations: {
-            average: 0,
-            mean: 0,
-            timeDelta: 0,
-            recordTime: 0,
-            recordScore: 0
-        },
-        effects: {
-            average: 0,
-            mean: 0,
-            timeDelta: 0,
-            recordTime: 0,
-            recordScore: 0
-        },
-        zoom: {
-            average: 0,
-            mean: 0,
-            timeDelta: 0,
-            recordTime: 0,
-            recordScore: 0
-        },
-        fileWrite: {
-            average: 0,
-            mean: 0,
-            timeDelta: 0,
-            recordTime: 0,
-            recordScore: 0
-        }
-    }
-    return vars; //average, mean, time delta, highest on record for individual tests and totals
-}
-
-function sumTests(tests) {
-    var totals = {
-        time: 0,
-        score: 0
-    }
-    for (var i = 0; i < tests.length; i++) { //sum the total time and scores from all the tests
-        totals.time += tests[i].time;
-        totals.score += tests[i].score | 0;
-    }
-    return totals;
-}
-
-function funcTimer(benchTest) { //executes tests, returns time and score
-    var vars = {
-        name: "",
-        time: 0,
-        score: 0
-    }
-
-    var start = new Date().getTime();
-
-    vars.name = benchTest();
-
-    var end = new Date().getTime();
-
-    vars.time = end - start;
-    vars.score = score(vars.time);
-    return vars;
-}
-
-function score(time) {
-    var scale = 5000000; //arbitary, but hopefully interesting for comparison
-    if (time <= 1) {
-        return false; //doh... 
-    }
-    return Math.round((1 / time) * scale );
-    //return "--- time: " + time + ", 1/time: " + 1/time + ", 1/time *30000: " + (1/time) *30000;
-}
-
-function objKeysToString(obj, del){
-    var str;
-    if( typeof obj === 'object' && obj != null){
-        for(var key in obj){
-            objToString(key, del)
-        }
-    }else{
-        var keyName = {obj};
-        for(var key in keyName){
-            str+=key;
-        }
-    }
-    return str;
-}
-
-function objValsToString(obj, del){
-    var str;
-    if( typeof obj === 'object' && obj != null){
-        for(var key in obj){
-            objToString(obj[key], del)
-        }
-    }else{
-        str += obj.toString() + del;
-    }
-    return str;
-}
-
-function recordResults(file, tests, testTotals, pastResults, info) {
-    //write results to file
-    //tests[i].name, time, score
-    //testTotals.time, score
-    //pastResults[i].tests, env, info
-    //test.tests + testTotals, info.env, info
-    var del = "\t";
-    writeToCSV( "---------TODO ____________, file");
-    var headers =  "date"+ 
-                objKeysToString(tests,del) + 
-                objKeysToString(testTotals,del) + 
-                objKeysToString(info,del) + 
-                "\n";
-                
-    var row1 =  "info.date + 
-                objValsToString(tests,del) + 
-                objValsToString(testTotals,del) + 
-                objValsToString(info) + 
-                "\n";
-    
-    var oldRows = pastResults?
-        function(){
-            var str;
-            for(var i = 0; i<pastResults.length;i++){
-                str += objValsToString( pastResults[i],del) + "/n";
-            }
-            return str;
-        } : "";
-    writeToCSV( headers + row1 + oldRows, file);
-}
-
-function writeToCSV(Txt, csvFile){  
-    csvFile.open( "e", "TEXT", $.getenv("USER"));  csvFile.seek(0,2);   
-    $.os.search(/windows/i)  != -1 ? csvFile.lineFeed = 'windows'  : csvFile.lineFeed = 'macintosh';  
-    csvFile.writeln(Txt);  
-    csvFile.close();  
-} 
-
-/* _____________________ Tests _________________________
+/* ______________ TESTS (the interesting bit) __________
    _____________________________________________________ 
    _____________________________________________________
    Do a particular type of operation in a regular, sufficiently-
@@ -464,6 +221,8 @@ function fileWriteTest(doc, progress) {
     return "File write test";
 }
 
+//________________________________________________________
+
 function centreObj(obj) {
     var doc = obj.layer.parent;
     var activeAB = doc.artboards[doc.artboards.getActiveArtboardIndex()];
@@ -476,6 +235,253 @@ function centreObj(obj) {
     
     app.redraw();
 }
+
+//________________________________________________________
+
+function getDoc(docName){
+    var doc;
+
+    if(app.activeDocument){ //doc open?
+        if(doc.name == docName){ //right name?
+            return doc;
+        }
+    } 
+    doc = app.documents.add(); //new doc then
+    doc.name = docName;
+
+    var path = Folder.selectDialog( //where to save it...
+        "The benchmark needs to make a new document to run in.\
+         \nPlease choose a location to save it. \
+         \rIf you select a folder, the script will automatically\
+         \nsave the results to a CSV file in that same location.\
+         \rRunning the benchmark additional times from the same\
+         \ndocument will append entries to the CSV file\
+         \nfor you to analyse in Excel.\
+         \rIf you click cancel, you can still run the benchmark but\
+         \nthe results won't be saved.", $.HOMEPATH);
+    if( !path || path == null || !saveLocation.exists ){
+        return doc; //oh, not saving it then...
+    }
+    var file = new File(path + "/" + docName + ".ai"); 
+    
+    // Preflight access rights
+	if (file.open("w")) {
+		file.close();
+        doc.saveAs( file, new IllustratorSaveOptions());
+	}
+	else {
+		throw new Error('Access is denied');
+	}
+
+    return doc; //here's a doc that has been saved (ie. it has a path)
+}
+
+function getCSVFile( fullPath ){
+    var csvFile = File( fullPath );
+    if(!csvFile.exists){
+        return false;
+    }
+    csvFile.encoding = 'UTF8',
+    csvFile.lineFeed = 'Windows'; //TODO for mac??
+    csvFile.open('r',undefined,undefined);
+    return csvFile;
+}
+
+function getDataFromCsvContents( arr ){//return some sort of data structure for past results
+    var contents = arr;
+    var delimiter = '\t'
+    var results = [];// will hold the data 
+    var rows = contents.split('\n');
+    var keys = rows[0].split(delimiter); // get the heads 
+
+    for(var i = 1; i < rows.length; i++){ 
+
+        var tempObj = {}; // temp object
+        var cells = rows[i].split(delimiter);// get the cells
+        // assign them to the heads
+        for(var j=0; j< keys.length;j++){
+            tempObj[keys[j]] = cells[j]; //TODO differentiate between results and info
+        }
+
+        var resultsObj = {};
+        for(var k in obj){
+            switch( k ){
+                case /^date/:
+                    resultsObj["date"]=obj[k];
+                    break;
+                case /^test/:
+                    resultsObj["tests"][k]=obj[k];
+                    break;
+                case /^env/:
+                    resultsObj["env"][k]=obj[k];
+                    break;
+                case /^info/:
+                    resultsObj["info"][k]=obj[k];
+                    break;
+                default:
+                    $.writeln( $line + " - " + k + " : " + obj[k] + " fell through the switch statement");
+                    break;
+            }
+        }
+        results.push(resultsObj); // add to data
+    }       
+    return results;
+}
+
+function analyseResults(results) {
+    //read from file - from the set of all past file runs
+    var vars = {
+        totals: {
+            average: 0,
+            mean: 0,
+            timeDelta: 0,
+            recordTime: 0,
+            recordScore: 0
+        },
+        rectangles: {
+            average: 0,
+            mean: 0,
+            timeDelta: 0,
+            recordTime: 0,
+            recordScore: 0
+        },
+        transformations: {
+            average: 0,
+            mean: 0,
+            timeDelta: 0,
+            recordTime: 0,
+            recordScore: 0
+        },
+        effects: {
+            average: 0,
+            mean: 0,
+            timeDelta: 0,
+            recordTime: 0,
+            recordScore: 0
+        },
+        zoom: {
+            average: 0,
+            mean: 0,
+            timeDelta: 0,
+            recordTime: 0,
+            recordScore: 0
+        },
+        fileWrite: {
+            average: 0,
+            mean: 0,
+            timeDelta: 0,
+            recordTime: 0,
+            recordScore: 0
+        }
+    }
+    return vars; //average, mean, time delta, highest on record for individual tests and totals
+}
+
+function sumTests(tests) {
+    var totals = {
+        time: 0,
+        score: 0
+    }
+    for (var i = 0; i < tests.length; i++) { //sum the total time and scores from all the tests
+        totals.time += tests[i].time;
+        totals.score += tests[i].score | 0;
+    }
+    return totals;
+}
+
+function funcTimer(benchTest) { //executes tests, returns time and score
+    var vars = {
+        name: "",
+        time: 0,
+        score: 0
+    }
+
+    var start = new Date().getTime();
+
+    vars.name = benchTest();
+
+    var end = new Date().getTime();
+
+    vars.time = end - start;
+    vars.score = score(vars.time);
+    return vars;
+}
+
+function score(time) {
+    var scale = 5000000; //arbitary, but hopefully interesting for comparison
+    if (time <= 1) {
+        return false; //doh... 
+    }
+    return Math.round((1 / time) * scale );
+    //return "--- time: " + time + ", 1/time: " + 1/time + ", 1/time *30000: " + (1/time) *30000;
+}
+
+
+function objKeysToString(obj, del, st){
+    var str = st || null;
+
+    var objKey = {obj};
+    for(var key in objKey){ //for objects and non objects alike, add the name to the string
+        str = str ?
+            "-" + key :
+            key; //is there a better way? 8-|
+    }
+    
+    if( typeof obj === 'object' && obj != null){ //all -
+        for(var key in obj){
+            objKeysToString(key, del, str);
+        }
+    }
+
+    return str;
+}
+
+function objValsToString(obj, del){
+    var str;
+    if( typeof obj === 'object' && obj != null){
+        for(var key in obj){
+            objToString(obj[key], del)
+        }
+    }else{
+        str += obj.toString() + del;
+    }
+    return str;
+}
+
+function recordResults(csvFile, tests, testTotals, pastResults, info) {
+    var del = "\t";
+  
+    var headers =  "date"+ 
+                objKeysToString(tests,del) + 
+                objKeysToString(testTotals,del) + 
+                objKeysToString(info,del) + 
+                "\n";
+    $.writeln( $.line + " - headers: " + headers );
+                
+    var row1 =  info.date + 
+                objValsToString(tests,del) + 
+                objValsToString(testTotals,del) + 
+                objValsToString(info) + 
+                "\n";
+     $.writeln( $.line + " - headers: " + row1 );
+
+    var oldRows = pastResults?
+        function(){
+            var str;
+            for(var i = 0; i<pastResults.length;i++){
+                str += objValsToString( pastResults[i],del) + "/n";
+            }
+            return str;
+        } : "";
+    writeToCSV( headers + row1 + oldRows, csvFile);
+}
+
+function writeToCSV(Txt, csvFile){  
+    csvFile.open( "e", "TEXT", $.getenv("USER"));  csvFile.seek(0,2);   
+    $.os.search(/windows/i)  != -1 ? csvFile.lineFeed = 'windows'  : csvFile.lineFeed = 'macintosh';  
+    csvFile.writeln(Txt);  
+    csvFile.close();  
+} 
 
 //_____________PROGRESS WINDOW UI
 //_________________________________________
@@ -1483,59 +1489,3 @@ function displayResults(tests, results, pastResults, info, runCount) {
 
     benchResultsWin.show();
 }
-
-/*
-Is there a doc open? named "Illustrator Benchnmark test.ai" ?
-    in the same directory, is there a file named "Illustrator Benchmark Data.csv"?
-        import data
-        array of data valid? 
-            get info(user input, not env vars) for pre-populating info input screen
-    .   .   
-    new csv data file
-.   new doc
-
-info screen  [environment variables][user input variables]
-past runs[ date,results[], info[userInput[],envVars[]]]
-if (!pastRuns[i].info) pastRuns[i].info = (search for earlier info)
-
-recurse backwards through 
-
-if data is different 
-
-    //Save prefs if location or parentFolder have been changed from defaults.
-        if( location != doc.path || parentFolder != "ImageMagick" ){
-                TakeNoteFutureGenerations_THISIsHowToClearAFile:{//argh!
-                        preferencesFile.open( "w", "TEXT", $.getenv("USER") ); //It's all in the 'w'
-                        preferencesFile.write("");
-                        preferencesFile.close();
-                }
-                logInfo( "computer:.:filename:.:location:.:parentFolder:.:gifFolder", preferencesFile ); //headers
-                findThisFileOnThisComputer: { //breaks if existing preference entry for this file on this computer is found, otherwise adds a new entry
-                        for(var i = 0; i < preferences.length; i++){ 
-                                if( preferences[i].computer == $.getenv( "COMPUTERNAME" )  && preferences[i].filename == doc.name){ //same computer, same file
-                                        preferences[i].location = location;
-                                        preferences[i].parentFolder = parentFolder;
-                                        preferences[i].gifFolder = gifFolder;
-                                        break findThisFileOnThisComputer;
-                                }
-                        }//No break in the loop? let's make a new preference entry then.
-                        var obj = {}; 
-                        obj.computer = $.getenv( "COMPUTERNAME" );
-                        obj.filename = doc.name; 
-                        obj.location = location; 
-                        obj.parentFolder = parentFolder;
-                        obj.gifFolder = gifFolder;
-                        preferences.push( obj );
-                }
-                            
-                for(var i = 0; i < preferences.length; i++){ 
-                        if( !(File (doc.path + "/" + preferences[i].filename).exists) ){
-                                preferences.splice(i,1); //if the file isn't in this folder any more, let's get rid of the preference
-                        }
-                }
-                 for(var i = 0; i < preferences.length; i++){  //Finally, write all those saved preferences back to the file
-                       if( preferences[i].computer == undefined || preferences[i].filename == undefined) continue;
-                       logInfo( preferences[i].computer + ":.:" + preferences[i].filename + ":.:" + preferences[i].location + ":.:" + preferences[i].parentFolder + ":.:" + preferences[i].gifFolder, preferencesFile);
-                 }
-        }       
-        */
