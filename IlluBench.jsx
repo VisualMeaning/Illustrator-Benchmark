@@ -119,7 +119,7 @@ function main(runs) {
 
     progress(false);
 
-    displayResuts(tests, testTotals, pastData, info, runCount); //Tell us what happened
+    displayResults(tests, testTotals, pastData, info, runCount); //Tell us what happened
 
     app.activeDocument.close(SaveOptions.DONOTSAVECHANGES);
 }//FIN
@@ -242,14 +242,15 @@ function getDoc(docName){
     var doc;
 
     if(app.activeDocument){ //doc open?
-        if(doc.name == docName){ //right name?
+        if(app.activeDocument.name  == docName){ //right name?
             return doc;
         }
     } 
     doc = app.documents.add(); //new doc then
     doc.name = docName;
-
-    var path = Folder.selectDialog( //where to save it...
+    
+    var location = Folder($.HOMEPATH)
+    var location = Folder.selectDialog( //where to save it...
         "The benchmark needs to make a new document to run in.\
          \nPlease choose a location to save it. \
          \rIf you select a folder, the script will automatically\
@@ -259,16 +260,17 @@ function getDoc(docName){
          \nfor you to analyse in Excel.\
          \rIf you click cancel, you can still run the benchmark but\
          \nthe results won't be saved.", $.HOMEPATH);
-    if( !path || path == null || !saveLocation.exists ){
+    if( !location){
         return doc; //oh, not saving it then...
     }
-    var file = new File(path + "/" + docName + ".ai"); 
+    var file = new File(location.toString() + "/" + docName + ".ai"); 
     
     // Preflight access rights
 	if (file.open("w")) {
 		file.close();
         doc.saveAs( file, new IllustratorSaveOptions());
 	}
+    
 	else {
 		throw new Error('Access is denied');
 	}
@@ -278,8 +280,8 @@ function getDoc(docName){
 
 function getCSVFile( fullPath ){
     var csvFile = File( fullPath );
-    if(!csvFile.exists){
-        return false;
+    if(csvFile.exists){
+        return csvFile;
     }
     csvFile.encoding = 'UTF8',
     csvFile.lineFeed = 'Windows'; //TODO for mac??
@@ -420,7 +422,7 @@ function score(time) {
 function objKeysToString(obj, del, st){
     var str = st || null;
 
-    var objKey = {obj};
+    var objKey = {obj:obj};
     for(var key in objKey){ //for objects and non objects alike, add the name to the string
         str = str ?
             "-" + key :
@@ -440,7 +442,7 @@ function objValsToString(obj, del){
     var str;
     if( typeof obj === 'object' && obj != null){
         for(var key in obj){
-            objToString(obj[key], del)
+            objValsToString(obj[key], del)
         }
     }else{
         str += obj.toString() + del;
