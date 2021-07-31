@@ -241,11 +241,13 @@ function centreObj(obj) {
 function getDoc(docName){
     var doc;
 
-    if(app.activeDocument){ //doc open?
-        if(app.activeDocument.name  == docName){ //right name?
-            return doc;
+    if(app.documents.length>0){ //doc open?
+        if(app.activeDocument.name == docName){ //right name?
+            $.writeln("Doc found");
+            return app.activeDocument;
         }
     } 
+
     doc = app.documents.add(); //new doc then
     doc.name = docName;
     
@@ -263,7 +265,7 @@ function getDoc(docName){
     if( !location){
         return doc; //oh, not saving it then...
     }
-    var file = new File(location.toString() + "/" + docName + ".ai"); 
+    var file = new File(location.toString() + "/" + docName); 
     
     // Preflight access rights
 	if (file.open("w")) {
@@ -463,9 +465,9 @@ function recordResults(csvFile, tests, testTotals, pastResults, info) {
     var row1 =  info.date + 
                 objValsToString(tests,del) + 
                 objValsToString(testTotals,del) + 
-                objValsToString(info) + 
+                objValsToString(info,del) + 
                 "\n";
-     $.writeln( $.line + " - headers: " + row1 );
+     $.writeln( $.line + " - row1: " + row1 );
 
     var oldRows = pastResults?
         function(){
