@@ -113,6 +113,8 @@ function main(runs) {
 
     var testTotals = sumTests(tests); //total time and score for this test
 
+   // $.writeln( $.line + " - testTotals -> " + testTotals.name);
+
     if(csvFile){
         recordResults(csvFile, tests, testTotals, pastData, info); //write time/score & info to illuBench record.txt file
     }
@@ -121,7 +123,7 @@ function main(runs) {
 
     displayResults(tests, testTotals, pastData, info, runCount); //Tell us what happened
 
-    app.activeDocument.close(SaveOptions.DONOTSAVECHANGES);
+   // app.activeDocument.close(SaveOptions.DONOTSAVECHANGES);
 }//FIN
 
 /* ______________ TESTS (the interesting bit) __________
@@ -137,9 +139,9 @@ function rectanglesTest(obj, progress) {
     var rects = [];
     progress("Rectangles test");
 
-    for (var i = 0; i < 40; i++) {
+    for (var i = 0; i < 4; i++) {
         rects[i] = [];
-        for (var j = 0; j < 80; j++) {
+        for (var j = 0; j < 8; j++) {
             rects[i][j] = doc.pathItems.rectangle(-3, 3, 4, 4);
             rects[i][j].move(obj, ElementPlacement.PLACEATEND);
             rects[i][j].translate(j + (i * 7), j * 4);
@@ -151,13 +153,13 @@ function rectanglesTest(obj, progress) {
     centreObj(obj);
 
     app.redraw();
-    return "Rectangles test";
+    return "Test - Rectangles";
 }
 
 //______ TEST 2 
 function transformationsTest(obj, progress) {
 
-    progress("Transformations test");
+    progress("Test - Transformations");
 
     for (var i = 0; i < obj.pageItems.length; i++) { // 220,000 points
         //rotate
@@ -168,12 +170,12 @@ function transformationsTest(obj, progress) {
     }
     centreObj(obj);
     app.redraw();
-    return "Transformations test";
+    return "Test - Transformations";
 }
 
 //______ TEST 3
 function effectsTest(obj, progress) {
-    progress("Effects test");
+    progress("Test - Effects");
     /*Thanks m1b, femkeblanco, Silly-V, CarlosCanto 
     https://community.adobe.com/t5/illustrator/pageitem-applyeffect-liveeffectxml/m-p/7315221
     https://community.adobe.com/t5/illustrator/scripting-live-effects/m-p/11744702 
@@ -190,13 +192,13 @@ function effectsTest(obj, progress) {
     obj.applyEffect(efct);
 
     app.redraw();
-    return "Effects test";
+    return "Test - Effects";
 }
 
 //______ TEST 4
 function zoomTest(doc, progress) {
     app.redraw();
-    progress("Zoom test");
+    progress("Test - Zoom");
     var view = doc.views[0];
     view.zoom = 1;
 
@@ -210,15 +212,15 @@ function zoomTest(doc, progress) {
         app.redraw();
     }
     app.redraw();
-    return "Zoom test";
+    return "Test - Zoom";
 }
 
 //______ TEST 5
 function fileWriteTest(doc, progress) {
-    progress("File write test");
+    progress("Test - File write");
     //write a few files, delete files
 
-    return "File write test";
+    return "Test - File write";
 }
 
 //________________________________________________________
@@ -383,6 +385,7 @@ function analyseResults(results) {
 
 function sumTests(tests) {
     var totals = {
+        name : "Test Totals",
         time: 0,
         score: 0
     }
@@ -420,25 +423,42 @@ function score(time) {
     //return "--- time: " + time + ", 1/time: " + 1/time + ", 1/time *30000: " + (1/time) *30000;
 }
 
-
-function objKeysToString(obj, del, st){
+function objKeysToString(vari, deli, st){
     var str = st || null;
-
-    var objKey = {obj:obj};
-    for(var key in objKey){ //for objects and non objects alike, add the name to the string
-        str = str ?
-            "-" + key :
-            key; //is there a better way? 8-|
-    }
-    
-    if( typeof obj === 'object' && obj != null){ //all -
-        for(var key in obj){
-            objKeysToString(key, del, str);
+    $.writeln($.line + " " + typeof vari + (vari.name || vari.toSource()))
+    if( typeof vari == 'object'){
+       //  $.writeln( $.line + " vari: " + vari.toSource());
+        for( var key in vari){
+            $.writeln( $.line + "key : " + key + ", val: " + vari[key]);
+            str+= vari.name || "";
+            return objKeysToString( vari[key], deli, str);
         }
-    }
+    }else{
+        str += vari + "";
+    } 
 
     return str;
 }
+// function objKeysToString(obj, deli, st){
+//     var str = st || null;
+//     // $.writeln( obj.reflect.properties)
+//     var objKey = {obj:obj};
+    
+//     for(var key in objKey){ //for objects and non objects alike, add the name to the string
+//         $.writeln( key );
+//         str = str ?
+//             "-" + key :
+//             key; //is there a better way? 8-|
+//     }
+    
+//     if( typeof obj === 'object'){ //all -
+//         for(var key in obj){
+//             objKeysToString(key, deli, str);
+//         }
+//     }
+
+//     return str;
+// }
 
 function objValsToString(obj, del){
     var str;
@@ -455,6 +475,8 @@ function objValsToString(obj, del){
 function recordResults(csvFile, tests, testTotals, pastResults, info) {
     var del = "\t";
   
+    $.writeln( $.line + " tests: " + tests.toSource() + ", testTotals: " + testTotals.toSource() + ", pastResults : " + pastResults.toSource() + ", info : " + info.toSource());
+
     var headers =  "date"+ 
                 objKeysToString(tests,del) + 
                 objKeysToString(testTotals,del) + 
@@ -534,6 +556,7 @@ function progressWindow() {
 function infoIU() { //What factors might be contributing to the benchmark times?
     var date = new Date();
     var vars = {
+        name: "Env Info",
         date: date.toISOString(),
         otherDocs: false,
         otherApps: false,
