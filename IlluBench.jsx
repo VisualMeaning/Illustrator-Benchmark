@@ -85,27 +85,31 @@ function main(runs) {
    // var doc = app.documents.add();
     app.executeMenuCommand('doc-color-rgb'); //TODO might be interesting to compare results in CYMK!
 
+    doc.pageItems.removeAll();
+
     var obj = doc.groupItems.add(); //The art item we'll add complexity to in the tests, to see what kind of impact it has on the benchmark
 
-    var tests = []; //each test to come back as an object containing time and a score
+    var tests = {}; //each test to come back as an object containing name, time and score
 
     var progress = progressWindow(); //in case you're wondering what's going on
 
     // Run the tests
 
-    tests[0] = funcTimer(function() {
+    tests.name = "Tests";
+
+    tests.rectangles = funcTimer(function() {
         return rectanglesTest(obj, progress)
     });
-    tests[1] = funcTimer(function() {
+    tests.transformations = funcTimer(function() {
         return transformationsTest(obj, progress)
     });
-    tests[2] = funcTimer(function() {
+    tests.effects = funcTimer(function() {
         return effectsTest(obj, progress)
     });
-    tests[3] = funcTimer(function() {
+    tests.zoom = funcTimer(function() {
         return zoomTest(doc, progress)
     });
-    tests[4] = funcTimer(function() {
+    tests.filewrite = funcTimer(function() {
         return fileWriteTest(doc, progress)
     });
 
@@ -153,13 +157,13 @@ function rectanglesTest(obj, progress) {
     centreObj(obj);
 
     app.redraw();
-    return "Test - Rectangles";
+    return "Rectangles";
 }
 
 //______ TEST 2 
 function transformationsTest(obj, progress) {
 
-    progress("Test - Transformations");
+    progress("Transformations");
 
     for (var i = 0; i < obj.pageItems.length; i++) { // 220,000 points
         //rotate
@@ -170,12 +174,12 @@ function transformationsTest(obj, progress) {
     }
     centreObj(obj);
     app.redraw();
-    return "Test - Transformations";
+    return "Transformations";
 }
 
 //______ TEST 3
 function effectsTest(obj, progress) {
-    progress("Test - Effects");
+    progress("Effects");
     /*Thanks m1b, femkeblanco, Silly-V, CarlosCanto 
     https://community.adobe.com/t5/illustrator/pageitem-applyeffect-liveeffectxml/m-p/7315221
     https://community.adobe.com/t5/illustrator/scripting-live-effects/m-p/11744702 
@@ -192,13 +196,13 @@ function effectsTest(obj, progress) {
     obj.applyEffect(efct);
 
     app.redraw();
-    return "Test - Effects";
+    return "Effects";
 }
 
 //______ TEST 4
 function zoomTest(doc, progress) {
     app.redraw();
-    progress("Test - Zoom");
+    progress("Zoom");
     var view = doc.views[0];
     view.zoom = 1;
 
@@ -212,15 +216,29 @@ function zoomTest(doc, progress) {
         app.redraw();
     }
     app.redraw();
-    return "Test - Zoom";
+    return "Zoom";
 }
 
 //______ TEST 5
 function fileWriteTest(doc, progress) {
-    progress("Test - File write");
-    //write a few files, delete files
+    progress("File write");
+    app.redraw();
 
-    return "Test - File write";
+    for( var i=0; i<7; i++){
+        var dest = doc.path || $.HOMEPATH;
+        var exportOptions = new ExportOptionsPNG24();
+        exportOptions.antiAliasing = false;
+        exportOptions.transparency = false;
+        exportOptions.saveAsHTML = true;
+        exportOptions.horizontalScale = exportOptions.verticalScale = (i + 1) * 70;
+
+        var type = ExportType.PNG24;
+        var filePNG = new File();
+
+        app.activeDocument.exportFile(filePNG, type, exportOptions);
+        filePNG.remove();
+    }
+    return "File write";
 }
 
 //________________________________________________________
@@ -281,6 +299,8 @@ function getDoc(docName){
 
     return doc; //here's a doc that has been saved (ie. it has a path)
 }
+
+//_____________________________________________
 
 function getCSVFile( fullPath ){
     var csvFile = File( fullPath );
@@ -389,14 +409,18 @@ function sumTests(tests) {
         time: 0,
         score: 0
     }
-    for (var i = 0; i < tests.length; i++) { //sum the total time and scores from all the tests
-        totals.time += tests[i].time;
-        totals.score += tests[i].score | 0;
+    for(var key in tests){
+        totals.time += tests[key].time || 0;
+        totals.score += tests[key].score || 0;
     }
+    // for (var i = 0; i < tests.length; i++) { //sum the total time and scores from all the tests
+    //     totals.time += tests[i].time;
+    //     totals.score += tests[i].score | 0;
+    // }
     return totals;
 }
 
-function funcTimer(benchTest) { //executes tests, returns time and score
+function funcTimer(test) { //executes tests, returns time and score
     var vars = {
         name: "",
         time: 0,
@@ -405,7 +429,7 @@ function funcTimer(benchTest) { //executes tests, returns time and score
 
     var start = new Date().getTime();
 
-    vars.name = benchTest();
+    vars.name = test();
 
     var end = new Date().getTime();
 
@@ -420,22 +444,39 @@ function score(time) {
         return false; //doh... 
     }
     return Math.round((1 / time) * scale );
-    //return "--- time: " + time + ", 1/time: " + 1/time + ", 1/time *30000: " + (1/time) *30000;
-}
+ }
 
 function objKeysToString(vari, deli, st){
-    var str = st || null;
-    $.writeln($.line + " " + typeof vari + (vari.name || vari.toSource()))
-    if( typeof vari == 'object'){
-       //  $.writeln( $.line + " vari: " + vari.toSource());
+    var str = st || "";
+    $.writeln($.line + " " + typeof vari + " :: " + (vari.name || vari.toSource()));
+
+    if(vari.name){
+        str+=vari.name;
         for( var key in vari){
-            $.writeln( $.line + "key : " + key + ", val: " + vari[key]);
-            str+= vari.name || "";
-            return objKeysToString( vari[key], deli, str);
+            if(vari[key].name){
+                objKeysToString(vari[key],deli,str);
+            }
+            else{
+                str+=key;
+                // var name = vari[key]
+                // var ob= {name : name}
+                // for(var keyName in vari[key]){
+                //     str+=keyName;
+                // }
         }
-    }else{
-        str += vari + "";
-    } 
+    }
+        str+=vari + deli;
+    }
+    // if( typeof vari == 'object'){
+    //    //  $.writeln( $.line + " vari: " + vari.toSource());
+    //     for( var key in vari){
+    //         $.writeln( $.line + "key : " + key + ", val: " + vari[key]);
+    //         str+= vari.name || "";
+    //         return objKeysToString( vari[key], deli, str);
+    //     }
+    // }else{
+    //     str += vari + "";
+    // } 
 
     return str;
 }
@@ -475,7 +516,7 @@ function objValsToString(obj, del){
 function recordResults(csvFile, tests, testTotals, pastResults, info) {
     var del = "\t";
   
-    $.writeln( $.line + " tests: " + tests.toSource() + ", testTotals: " + testTotals.toSource() + ", pastResults : " + pastResults.toSource() + ", info : " + info.toSource());
+     $.writeln( $.line + " tests: " + tests.toSource() + ", testTotals: " + testTotals.toSource() + ", pastResults : " + pastResults.toSource() + ", info : " + info.toSource());
 
     var headers =  "date"+ 
                 objKeysToString(tests,del) + 
@@ -490,6 +531,7 @@ function recordResults(csvFile, tests, testTotals, pastResults, info) {
                 objValsToString(info,del) + 
                 "\n";
      $.writeln( $.line + " - row1: " + row1 );
+     $.writeln( "TESTESTEST")
 
     var oldRows = pastResults?
         function(){
@@ -1075,13 +1117,13 @@ function displayResults(tests, results, pastResults, info, runCount) {
         statictext1.text = "Time: "; 
 
     var rectTimeText = testRectPanel.add("statictext", undefined, undefined, {name: "rectTimeText"}); 
-    rectTimeText.text = tests[0].time;
+    rectTimeText.text = tests.rectangles.time;
 
     var statictext2 = testRectPanel.add("statictext", undefined, undefined, {name: "statictext2"}); 
         statictext2.text = "Score:"; 
 
     var rectScoreText = testRectPanel.add("statictext", undefined, undefined, {name: "rectScoreText"}); 
-    rectScoreText.text = tests[0].score;
+    rectScoreText.text = tests.rectangles.score;
 
     // TESTTRANSPANEL
     // ==============
@@ -1096,13 +1138,13 @@ function displayResults(tests, results, pastResults, info, runCount) {
         statictext3.text = "Time: "; 
 
     var transTimeText = testTransPanel.add("statictext", undefined, undefined, {name: "transTimeText"}); 
-    transTimeText.text = tests[1].time;
+    transTimeText.text = tests.transformations.time;
 
     var statictext4 = testTransPanel.add("statictext", undefined, undefined, {name: "statictext4"}); 
         statictext4.text = "Score:"; 
 
     var transScoreText = testTransPanel.add("statictext", undefined, undefined, {name: "transScoreText"}); 
-    transScoreText.text = tests[1].score;
+    transScoreText.text = tests.transformations.score;
 
     // TESTEFFPANEL
     // ============
@@ -1117,13 +1159,13 @@ function displayResults(tests, results, pastResults, info, runCount) {
         statictext5.text = "Time: "; 
 
     var effTimeText = testEffPanel.add("statictext", undefined, undefined, {name: "effTimeText"}); 
-    effTimeText.text = tests[2].time;
+    effTimeText.text = tests.effects.time;
 
     var statictext6 = testEffPanel.add("statictext", undefined, undefined, {name: "statictext6"}); 
         statictext6.text = "Score:"; 
 
     var effScoreText = testEffPanel.add("statictext", undefined, undefined, {name: "effScoreText"}); 
-    effScoreText.text = tests[2].score;
+    effScoreText.text = tests.effects.score;
 
     // TESTZOOMPANEL
     // =============
@@ -1138,13 +1180,13 @@ function displayResults(tests, results, pastResults, info, runCount) {
         statictext7.text = "Time: "; 
 
     var zoomTimeText = testZoomPanel.add("statictext", undefined, undefined, {name: "zoomTimeText"}); 
-    zoomTimeText.text = tests[3].time;
+    zoomTimeText.text = tests.zoom.time;
 
     var statictext8 = testZoomPanel.add("statictext", undefined, undefined, {name: "statictext8"}); 
         statictext8.text = "Score:"; 
 
     var zoomScoreText = testZoomPanel.add("statictext", undefined, undefined, {name: "zoomScoreText"}); 
-    zoomScoreText.text = tests[3].score;
+    zoomScoreText.text = tests.zoom.score;
 
     // TESTFILEPANEL
     // =============
@@ -1159,13 +1201,13 @@ function displayResults(tests, results, pastResults, info, runCount) {
         statictext9.text = "Time: "; 
 
     var fileTimeText = testFilePanel.add("statictext", undefined, undefined, {name: "fileTimeText"}); 
-    fileTimeText.text = tests[4].time;
+    fileTimeText.text = tests.filewrite.time;
 
     var statictext10 = testFilePanel.add("statictext", undefined, undefined, {name: "statictext10"}); 
         statictext10.text = "Score:"; 
 
     var fileScoreText = testFilePanel.add("statictext", undefined, undefined, {name: "fileScoreText"}); 
-    fileScoreText.text = tests[4].score;
+    fileScoreText.text = tests.filewrite.score;
 
 
     // TESTRESULTSGROUP
