@@ -25,7 +25,7 @@
 */
 
 // @target illustrator
-// @include "json2.js"
+// include "json2.js"
 
 if (!Date.prototype.toISOString) {
     (function() {
@@ -461,21 +461,33 @@ function score(time) {
 
 function objKeysToString(vari, deli, st){
     var str = st || "";
-    var parent ="";
-    
-    if( typeof vari === 'object'){
-        //str+=
-        for(var key in vari){
-            alert(vari.name + "~" +  key);
-            //str += vari.name;
-            if( key != "name"){
-                //str += vari.name;
-                str += vari.name + "~" + objKeysToString( vari[key],deli);
-            }
+    for(var key in vari){
+        if( typeof vari === 'object' ){
+            str += objKeysToString( vari[key],deli, vari.name + "~" );
+        }else if(key!= "toJSON"){
+            str += key;
         }
     }
     return str;
-}   
+}
+
+// function objKeysToString(vari, deli, st){
+//     var str = st || "";
+//     var parent ="";
+    
+//     //if( typeof vari === 'object'){
+//         //str+=
+//         for(var key in vari){
+//             alert(vari.name + "~" +  key);
+//             //str += vari.name;
+//             if( key != "name"){
+//                 //str += vari.name;
+//                 str += vari.name + "~" + objKeysToString( vari[key],deli);
+//             }
+//         }
+//    // }
+//     return str;
+// }   
 
 // function objKeysToString( vari, deli){
 //     alert(JSON.stringify(vari));
@@ -511,7 +523,7 @@ function objValsToString(vari, deli, st){
 
 function recordResults(csvFile, tests, testTotals, pastResults, info) {
     var del = "\t";
-
+    alert( "::: " + objKeysToString(tests));
      var headers =  "date" + del +
                 objKeysToString(tests,del) + 
                 objKeysToString(testTotals,del) + 
