@@ -318,7 +318,7 @@ function getCSVFile( fullPath ){
 
 function getDataFromCsvContents( arr ){//return some sort of data structure for past results
     var contents = arr;
-    var delimiter = '\t'
+    var delimiter = ','
     var results = [];// will hold the data 
     var rows = contents.split('\n');
     var keys = rows[0].split(delimiter); // get the heads 
@@ -412,7 +412,7 @@ function analyseResults(results) {
 
 function sumTests(tests) {
     var totals = {
-        name : "Test Totals",
+        name : "Test_Totals",
         time: 0,
         score: 0
     }
@@ -459,95 +459,35 @@ function score(time) {
 
  //_____________________________________________
 
-function objKeysToString(vari, deli, par){
+function objKeysToString(vari, delimiter, par){
     var str = "";
     var parents = par || "";
+    //alert(vari.name);
     for (var key in vari){
         if(key && vari[key] && key != "toJSON"){
             if( typeof vari[key] ==='object'){//it's a parent object 
                // alert( key + " = object");
-               // str+= objKeysToString( vari[key], deli, (str?str+"~":"")+ vari.name);
-               parents = key;
-               str+=objKeysToString( vari[key], deli, parents);
-            }else if(key != "name"){
+               parents = vari.name+"~"+key;
+               str+=objKeysToString( vari[key], delimiter, parents);
+            }else if(key != "name"){ //it's a column header
               //  alert( key + " = VARIABLE" );
-                str += deli + parents + "~"+ key ;
-
+                str += delimiter + parents + "~"+ key ;
             }
         }
     }
     return str;
 }
 
-//  function objKeysToString(vari, deli, st){
-//     var str = st || "";
-//     for(var key in vari){
-//         if( typeof vari === 'object' && key != "name" && vari[key]){
-//             str = objKeysToString( vari[key], deli, (str?str+"~":"") + key);
-//             //str += (vari.name || "") + "~" + objKeysToString( vari[key],deli,);
-//         }else if(key!= "toJSON" && key ){
-//            str += key + deli;
-//         }
-//     }
-//     return str;
-// }
-
-// function objKeysToString(vari, deli, st){
-//     var str = st || "";
-//     for(var key in vari){
-//         if( typeof vari === 'object' ){
-//             str += (vari.name || "") + "~" + objKeysToString( vari[key],deli,);
-//         }else if(key!= "toJSON"){
-//            str += key;
-//         }
-//     }
-//     return str;
-// }
-
-// function objKeysToString(vari, deli, st){
-//     var str = st || "";
-//     var parent ="";
+function objValsToString(vari, delimiter, st){
+    var str = "";
     
-//     //if( typeof vari === 'object'){
-//         //str+=
-//         for(var key in vari){
-//             alert(vari.name + "~" +  key);
-//             //str += vari.name;
-//             if( key != "name"){
-//                 //str += vari.name;
-//                 str += vari.name + "~" + objKeysToString( vari[key],deli);
-//             }
-//         }
-//    // }
-//     return str;
-// }   
-
-// function objKeysToString( vari, deli){
-//     alert(JSON.stringify(vari));
-// }
-
-// function objKeysToString(vari, deli, st){
-//     var str = st || "";
-//     if( typeof vari === 'object'){
-//         //str += vari.name;
-//         for(var key in vari){
-//             //str += vari.name;
-//             if( key != "name"){
-//                 //str += vari.name;
-//                 str += vari.name + "~" + objKeysToString( vari[key],deli);
-//             }
-//         }
-//     }
-//     return str;
-// }      
-
-function objValsToString(vari, deli, st){
-    var str = st || "";
-    if( typeof vari === 'object'){
-        //str += vari.name;
-        for(var key in vari){
-            if( key != "name"){
-                str+= objValsToString( vari[key],deli ) + deli;
+    for (var key in vari){
+        if(key && vari[key] && key != "toJSON"){
+            if( typeof vari[key] ==='object'){//it's a parent object 
+               str+=objValsToString( vari[key], delimiter);
+            }else if(key != "name"){ //it's a column header
+              //  alert( key + " = VARIABLE" );
+                str += delimiter + vari[key];
             }
         }
     }
@@ -555,33 +495,34 @@ function objValsToString(vari, deli, st){
 }
 
 function recordResults(csvFile, tests, testTotals, pastResults, info) {
-    var del = "\t";
+    var delimiter = ",";
   
-    alert( "::: " + objKeysToString(tests, del) );
+    //alert( "::: " + objKeysToString(tests, del) );
     
-    //  var headers =  "date" + del +
-    //             objKeysToString(tests,del) + 
-    //             objKeysToString(testTotals,del) + 
-    //             objKeysToString(info,del) + 
-    //             "\n";
+    var headers =  "date" + delimiter +
+                objKeysToString(tests,delimiter) + 
+               // objKeysToString(testTotals,del) + 
+                objKeysToString(info,delimiter) + 
+                "\n";
    // alert( $.line + " - headers::: " + headers );
   // alert("test");
                 
     var row1 =  info.date + 
-                objValsToString(tests,del) + 
-                objValsToString(testTotals,del) + 
-                objValsToString(info,del) + 
+                objValsToString(tests,delimiter) + 
+                objValsToString(testTotals,delimiter) + 
+                objValsToString(info,delimiter) + 
                 "\n";
+    alert( "headers ::: " + headers + " ,___row1 :::: " + row1);
 
     var oldRows = pastResults?
         function(){
             var str;
             for(var i = 0; i<pastResults.length;i++){
-                str += objValsToString( pastResults[i],del) + "/n";
+                str += objValsToString( pastResults[i],delimiter) + "/n";
             }
             return str;
         } : "";
-//    writeToCSV( headers + row1 + oldRows, csvFile);
+    writeToCSV( headers + row1 + oldRows, csvFile);
 }
 
 function writeToCSV(Txt, csvFile){  
@@ -637,16 +578,28 @@ function progressWindow() {
 function infoIU() { //What factors might be contributing to the benchmark times?
     var date = new Date();
     var vars = {
-        name: "Env Info",
+        name:"Info",
         date: date.toISOString(),
-        otherDocs: false,
-        otherApps: false,
-        optimisationApp: false,
-        illuVersion: app.version,
-        os: $.os,
-        screens: $.screens.length, //number of displays? TODO - calculate resolutions (left,top,right,bottom)
-        cpu: $.getenv("PROCESSOR_IDENTIFIER"),
-        threads: $.getenv("NUMBER_OF_PROCESSORS")
+        Env_Info : {
+            name: "Environment_info",
+            illuVersion: app.version,
+            os: $.os,
+            screens: $.screens.length, //number of displays? TODO - calculate resolutions (left,top,right,bottom)
+            cpu: $.getenv("PROCESSOR_IDENTIFIER"),
+            threads: $.getenv("NUMBER_OF_PROCESSORS")
+        },
+        Usr_Inpt :{
+            name: "User_input_variables",
+            otherDocs: false,
+            otherApps: false,
+            optimisationApp: false,
+            CPU_Model:"",
+            CPU_Mhz:"",
+            RAM_GB:"",
+            RAM_Mhz:"",
+            GPU:"",
+            HDD:""
+        }
     };
 
     //https://scriptui.joonas.me <- praise
