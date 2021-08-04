@@ -459,27 +459,24 @@ function score(time) {
 
  //_____________________________________________
 
-function objKeysToString(vari, deli, st){
-    var str = st || "";
+function objKeysToString(vari, deli, par){
+    var str = "";
+    var parents = par || "";
     for (var key in vari){
-        // if(key == "name"){
-        //     str+=key;
-        // }
-        // if(key == "name")return;
-        // if( vari[key].name){
-           
-        //     return objKeysToString(vari[key,deli,str+=key.name]);
-        // }
         if(key && vari[key] && key != "toJSON"){
-           // alert("key: " + key + " : " + vari[key]);
             if( typeof vari[key] ==='object'){//it's a parent object 
-                alert( key + " = object");
-                str+= objKeysToString( vari[key],deli);
+               // alert( key + " = object");
+               // str+= objKeysToString( vari[key], deli, (str?str+"~":"")+ vari.name);
+               parents = key;
+               str+=objKeysToString( vari[key], deli, parents);
             }else if(key != "name"){
-                alert( key + " = VARIABLE" );
+              //  alert( key + " = VARIABLE" );
+                str += deli + parents + "~"+ key ;
+
             }
         }
     }
+    return str;
 }
 
 //  function objKeysToString(vari, deli, st){
@@ -560,13 +557,13 @@ function objValsToString(vari, deli, st){
 function recordResults(csvFile, tests, testTotals, pastResults, info) {
     var del = "\t";
   
-    alert( "::: " + objKeysToString(tests) );
+    alert( "::: " + objKeysToString(tests, del) );
     
-     var headers =  "date" + del +
-                objKeysToString(tests,del) + 
-                objKeysToString(testTotals,del) + 
-                objKeysToString(info,del) + 
-                "\n";
+    //  var headers =  "date" + del +
+    //             objKeysToString(tests,del) + 
+    //             objKeysToString(testTotals,del) + 
+    //             objKeysToString(info,del) + 
+    //             "\n";
    // alert( $.line + " - headers::: " + headers );
   // alert("test");
                 
@@ -584,7 +581,7 @@ function recordResults(csvFile, tests, testTotals, pastResults, info) {
             }
             return str;
         } : "";
-    writeToCSV( headers + row1 + oldRows, csvFile);
+//    writeToCSV( headers + row1 + oldRows, csvFile);
 }
 
 function writeToCSV(Txt, csvFile){  
