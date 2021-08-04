@@ -461,15 +461,51 @@ function score(time) {
 
 function objKeysToString(vari, deli, st){
     var str = st || "";
-    for(var key in vari){
-        if( typeof vari === 'object' ){
-            str += objKeysToString( vari[key],deli, vari.name + "~" );
-        }else if(key!= "toJSON"){
-            str += key;
+    for (var key in vari){
+        // if(key == "name"){
+        //     str+=key;
+        // }
+        // if(key == "name")return;
+        // if( vari[key].name){
+           
+        //     return objKeysToString(vari[key,deli,str+=key.name]);
+        // }
+        if(key && vari[key] && key != "toJSON"){
+           // alert("key: " + key + " : " + vari[key]);
+            if( typeof vari[key] ==='object'){//it's a parent object 
+                alert( key + " = object");
+                str+= objKeysToString( vari[key],deli);
+            }else if(key != "name"){
+                alert( key + " = VARIABLE" );
+            }
         }
     }
-    return str;
 }
+
+//  function objKeysToString(vari, deli, st){
+//     var str = st || "";
+//     for(var key in vari){
+//         if( typeof vari === 'object' && key != "name" && vari[key]){
+//             str = objKeysToString( vari[key], deli, (str?str+"~":"") + key);
+//             //str += (vari.name || "") + "~" + objKeysToString( vari[key],deli,);
+//         }else if(key!= "toJSON" && key ){
+//            str += key + deli;
+//         }
+//     }
+//     return str;
+// }
+
+// function objKeysToString(vari, deli, st){
+//     var str = st || "";
+//     for(var key in vari){
+//         if( typeof vari === 'object' ){
+//             str += (vari.name || "") + "~" + objKeysToString( vari[key],deli,);
+//         }else if(key!= "toJSON"){
+//            str += key;
+//         }
+//     }
+//     return str;
+// }
 
 // function objKeysToString(vari, deli, st){
 //     var str = st || "";
@@ -523,13 +559,16 @@ function objValsToString(vari, deli, st){
 
 function recordResults(csvFile, tests, testTotals, pastResults, info) {
     var del = "\t";
-    alert( "::: " + objKeysToString(tests));
+  
+    alert( "::: " + objKeysToString(tests) );
+    
      var headers =  "date" + del +
                 objKeysToString(tests,del) + 
                 objKeysToString(testTotals,del) + 
                 objKeysToString(info,del) + 
                 "\n";
    // alert( $.line + " - headers::: " + headers );
+  // alert("test");
                 
     var row1 =  info.date + 
                 objValsToString(tests,del) + 
