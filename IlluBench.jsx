@@ -467,7 +467,7 @@ function objKeysToString(vari, delimiter, par){
         if(key && vari[key] && key != "toJSON"){
             if( typeof vari[key] ==='object'){//it's a parent object 
                // alert( key + " = object");
-               parents = vari.name+"~"+key;
+               parents = (vari.name || "") +"~"+key;
                str+=objKeysToString( vari[key], delimiter, parents);
             }else if(key != "name"){ //it's a column header
               //  alert( key + " = VARIABLE" );
@@ -501,27 +501,21 @@ function recordResults(csvFile, tests, testTotals, pastResults, info) {
     
     var headers =  "date" + delimiter +
                 objKeysToString(tests,delimiter) + 
-               // objKeysToString(testTotals,del) + 
+                objKeysToString({"TestTotals" : testTotals},delimiter) + 
                 objKeysToString(info,delimiter) + 
                 "\n";
    // alert( $.line + " - headers::: " + headers );
   // alert("test");
                 
     var row1 =  info.date + 
-                objValsToString(tests,delimiter) + 
+                objValsToString(tests,delimiter) +
                 objValsToString(testTotals,delimiter) + 
                 objValsToString(info,delimiter) + 
                 "\n";
     alert( "headers ::: " + headers + " ,___row1 :::: " + row1);
 
-    var oldRows = pastResults?
-        function(){
-            var str;
-            for(var i = 0; i<pastResults.length;i++){
-                str += objValsToString( pastResults[i],delimiter) + "/n";
-            }
-            return str;
-        } : "";
+    var oldRows = pastResults?getPastResults(pastResults, delimiter) : "";
+
     writeToCSV( headers + row1 + oldRows, csvFile);
 }
 
@@ -531,6 +525,14 @@ function writeToCSV(Txt, csvFile){
     csvFile.writeln(Txt);  
     csvFile.close();  
 } 
+
+function getPastResults( pastResults, delimiter){
+    var str;
+    for(var i = 0; i<pastResults.length;i++){
+        str += objValsToString( pastResults[i],delimiter) + "/n";
+    }
+    return str;
+}
 
 //_____________PROGRESS WINDOW UI
 //_________________________________________
