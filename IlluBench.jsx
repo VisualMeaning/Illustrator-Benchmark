@@ -25,6 +25,7 @@
 */
 
 // @target illustrator
+// @include "json2.js"
 
 if (!Date.prototype.toISOString) {
     (function() {
@@ -62,7 +63,6 @@ main();
 
 function main(runs) {
     var runCount = runs || 0;
-
     var docName = "Illustrator Benchmark Doc.ai";
     var doc = getDoc(docName); //try and get a saved doc (with a path), or an unsaved one if prefered. 
 
@@ -113,6 +113,8 @@ function main(runs) {
         return fileWriteTest(doc, progress)
     });
 
+    progress(false);
+
     // Tell us what happened
 
     var testTotals = sumTests(tests); //total time and score for this test
@@ -122,8 +124,6 @@ function main(runs) {
     if(csvFile){
         recordResults(csvFile, tests, testTotals, pastData, info); //write time/score & info to illuBench record.txt file
     }
-
-    progress(false);
 
     displayResults(tests, testTotals, pastData, info, runCount); //Tell us what happened
 
@@ -143,12 +143,12 @@ function rectanglesTest(obj, progress) {
     var rects = [];
     progress("Rectangles test");
 
-    for (var i = 0; i < 4; i++) {
+    for (var i = 0; i < 20; i++) {
         rects[i] = [];
         for (var j = 0; j < 8; j++) {
             rects[i][j] = doc.pathItems.rectangle(-3, 3, 4, 4);
             rects[i][j].move(obj, ElementPlacement.PLACEATEND);
-            rects[i][j].translate(j + (i * 7), j * 4);
+            rects[i][j].translate(j + (i * 7), j * 20);
             rects[i][j].fillColor.red = rects[i][j].strokeColor.blue = 20 + (Math.round(Math.random() * 70));
             rects[i][j].fillColor.green = rects[i][j].strokeColor.red = 90 + (Math.round(Math.random() * 65));
             rects[i][j].fillColor.blue = rects[i][j].strokeColor.green = 160 + (Math.round(Math.random() * 30));
@@ -205,13 +205,14 @@ function zoomTest(doc, progress) {
     progress("Zoom");
     var view = doc.views[0];
     view.zoom = 1;
+    var inc = 0.1; // 0.01; //increment
 
-    for (var a = 1; a > 0.3; a -= 0.01) {
+    for (var a = 1; a > 0.3; a -= inc) {
         view.zoom = a;
         app.redraw();
     }
     app.redraw();
-    for (var a = 0.3; a <= 1; a += 0.01) {
+    for (var a = 0.3; a <= 1; a += inc) {
         view.zoom = a;
         app.redraw();
     }
@@ -224,13 +225,13 @@ function fileWriteTest(doc, progress) {
     progress("File write");
     app.redraw();
 
-    for( var i=0; i<7; i++){
+    for( var i=0; i<1; i++){
         var dest = doc.path || $.HOMEPATH;
         var exportOptions = new ExportOptionsPNG24();
         exportOptions.antiAliasing = false;
         exportOptions.transparency = false;
         exportOptions.saveAsHTML = true;
-        exportOptions.horizontalScale = exportOptions.verticalScale = (i + 1) * 70;
+        exportOptions.horizontalScale = exportOptions.verticalScale = (i + 1) * 100;
 
         var type = ExportType.PNG24;
         var filePNG = new File();
@@ -313,6 +314,8 @@ function getCSVFile( fullPath ){
     return csvFile;
 }
 
+//_____________________________________________
+
 function getDataFromCsvContents( arr ){//return some sort of data structure for past results
     var contents = arr;
     var delimiter = '\t'
@@ -353,6 +356,8 @@ function getDataFromCsvContents( arr ){//return some sort of data structure for 
     }       
     return results;
 }
+
+//_____________________________________________
 
 function analyseResults(results) {
     //read from file - from the set of all past file runs
@@ -403,6 +408,8 @@ function analyseResults(results) {
     return vars; //average, mean, time delta, highest on record for individual tests and totals
 }
 
+//_____________________________________________
+
 function sumTests(tests) {
     var totals = {
         name : "Test Totals",
@@ -419,6 +426,8 @@ function sumTests(tests) {
     // }
     return totals;
 }
+
+//_____________________________________________
 
 function funcTimer(test) { //executes tests, returns time and score
     var vars = {
@@ -438,6 +447,8 @@ function funcTimer(test) { //executes tests, returns time and score
     return vars;
 }
 
+//_____________________________________________
+
 function score(time) {
     var scale = 5000000; //arbitary, but hopefully interesting for comparison
     if (time <= 1) {
@@ -446,92 +457,73 @@ function score(time) {
     return Math.round((1 / time) * scale );
  }
 
+ //_____________________________________________
+
 function objKeysToString(vari, deli, st){
     var str = st || "";
-    $.writeln($.line + " " + typeof vari + " :: " + (vari.name || vari.toSource()));
-
-    if(vari.name){
-        str+=vari.name;
-        for( var key in vari){
-            if(vari[key].name){
-                objKeysToString(vari[key],deli,str);
+    var parent ="";
+    
+    if( typeof vari === 'object'){
+        //str+=
+        for(var key in vari){
+            alert(vari.name + "~" +  key);
+            //str += vari.name;
+            if( key != "name"){
+                //str += vari.name;
+                str += vari.name + "~" + objKeysToString( vari[key],deli);
             }
-            else{
-                str+=key;
-                // var name = vari[key]
-                // var ob= {name : name}
-                // for(var keyName in vari[key]){
-                //     str+=keyName;
-                // }
         }
     }
-        str+=vari + deli;
-    }
-    // if( typeof vari == 'object'){
-    //    //  $.writeln( $.line + " vari: " + vari.toSource());
-    //     for( var key in vari){
-    //         $.writeln( $.line + "key : " + key + ", val: " + vari[key]);
-    //         str+= vari.name || "";
-    //         return objKeysToString( vari[key], deli, str);
-    //     }
-    // }else{
-    //     str += vari + "";
-    // } 
-
     return str;
-}
-// function objKeysToString(obj, deli, st){
-//     var str = st || null;
-//     // $.writeln( obj.reflect.properties)
-//     var objKey = {obj:obj};
-    
-//     for(var key in objKey){ //for objects and non objects alike, add the name to the string
-//         $.writeln( key );
-//         str = str ?
-//             "-" + key :
-//             key; //is there a better way? 8-|
-//     }
-    
-//     if( typeof obj === 'object'){ //all -
-//         for(var key in obj){
-//             objKeysToString(key, deli, str);
-//         }
-//     }
+}   
 
-//     return str;
+// function objKeysToString( vari, deli){
+//     alert(JSON.stringify(vari));
 // }
 
-function objValsToString(obj, del){
-    var str;
-    if( typeof obj === 'object' && obj != null){
-        for(var key in obj){
-            objValsToString(obj[key], del)
+// function objKeysToString(vari, deli, st){
+//     var str = st || "";
+//     if( typeof vari === 'object'){
+//         //str += vari.name;
+//         for(var key in vari){
+//             //str += vari.name;
+//             if( key != "name"){
+//                 //str += vari.name;
+//                 str += vari.name + "~" + objKeysToString( vari[key],deli);
+//             }
+//         }
+//     }
+//     return str;
+// }      
+
+function objValsToString(vari, deli, st){
+    var str = st || "";
+    if( typeof vari === 'object'){
+        //str += vari.name;
+        for(var key in vari){
+            if( key != "name"){
+                str+= objValsToString( vari[key],deli ) + deli;
+            }
         }
-    }else{
-        str += obj.toString() + del;
     }
     return str;
 }
 
 function recordResults(csvFile, tests, testTotals, pastResults, info) {
     var del = "\t";
-  
-     $.writeln( $.line + " tests: " + tests.toSource() + ", testTotals: " + testTotals.toSource() + ", pastResults : " + pastResults.toSource() + ", info : " + info.toSource());
 
-    var headers =  "date"+ 
+     var headers =  "date" + del +
                 objKeysToString(tests,del) + 
                 objKeysToString(testTotals,del) + 
                 objKeysToString(info,del) + 
                 "\n";
-    $.writeln( $.line + " - headers: " + headers );
+   // alert( $.line + " - headers::: " + headers );
                 
     var row1 =  info.date + 
                 objValsToString(tests,del) + 
                 objValsToString(testTotals,del) + 
                 objValsToString(info,del) + 
                 "\n";
-     $.writeln( $.line + " - row1: " + row1 );
-     $.writeln( "TESTESTEST")
 
     var oldRows = pastResults?
         function(){
@@ -545,7 +537,7 @@ function recordResults(csvFile, tests, testTotals, pastResults, info) {
 }
 
 function writeToCSV(Txt, csvFile){  
-    csvFile.open( "e", "TEXT", $.getenv("USER"));  csvFile.seek(0,2);   
+    csvFile.open( "w", "TEXT", $.getenv("USER"));  csvFile.seek(0,2);   
     $.os.search(/windows/i)  != -1 ? csvFile.lineFeed = 'windows'  : csvFile.lineFeed = 'macintosh';  
     csvFile.writeln(Txt);  
     csvFile.close();  
@@ -593,7 +585,6 @@ function progressWindow() {
 //_________________________________________
 //_________________________________________
 //_________________________________________
-
 
 function infoIU() { //What factors might be contributing to the benchmark times?
     var date = new Date();
@@ -1055,7 +1046,6 @@ function infoIU() { //What factors might be contributing to the benchmark times?
 
     return vars; // {all the things}
 }
-
 
 //_____________DISPLAY RESULTS UI
 //_________________________________________
