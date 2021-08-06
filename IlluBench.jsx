@@ -62,21 +62,28 @@ if (!Date.prototype.toISOString) {
 main();
 
 function main(runs) {
+    var VERSION = 0.5; //script version
     var runCount = runs || 0;
     var docName = "Illustrator Benchmark Doc.ai";
     var doc = getDoc(docName); //try and get a saved doc (with a path), or an unsaved one if prefered. 
 
     var csvFilename = "Illustrator Benchmark Data.csv";
-    var csvFile = doc.path ?
-        getCSVFile(doc.path + "/" + csvFilename) :
-        false; //if there's an appropriately named csv file already in this location, get the contents 
+    var csvFile = getCSVFile( doc.path + "/" + csvFilename );
+  //  alert( csvFile.read());
+
+    // var csvFile = doc.path ?
+    //     getCSVFile(doc.path + "/" + csvFilename) :
+    //     false; //if there's an appropriately named csv file already in this location, get the contents 
+   // alert( csvFile.toString());
+  // alert("CSV: " + csvFile.read());
     var pastData = csvFile ? 
         getDataFromCsvContents(csvFile.read()) : 
         false;
+    //alert( pastData.toString());
 
     //var pastResults = analyseResults(); //average, mean, time delta, highest on record for individual tests and totals
 
-    var info = infoIU(pastData,runCount); //factors that might affect the results - to append to the results for this run
+    var info = infoIU(pastData,runCount, VERSION); //factors that might affect the results - to append to the results for this run
 
     if (!info) {
        return
@@ -138,6 +145,7 @@ function main(runs) {
    */
 
 //______ TEST 1
+
 function rectanglesTest(obj, progress) {
     var doc = obj.layer.parent;
     var rects = [];
@@ -161,6 +169,7 @@ function rectanglesTest(obj, progress) {
 }
 
 //______ TEST 2 
+
 function transformationsTest(obj, progress) {
 
     progress("Transformations");
@@ -178,6 +187,7 @@ function transformationsTest(obj, progress) {
 }
 
 //______ TEST 3
+
 function effectsTest(obj, progress) {
     progress("Effects");
     /*Thanks m1b, femkeblanco, Silly-V, CarlosCanto 
@@ -200,6 +210,7 @@ function effectsTest(obj, progress) {
 }
 
 //______ TEST 4
+
 function zoomTest(doc, progress) {
     app.redraw();
     progress("Zoom");
@@ -221,6 +232,7 @@ function zoomTest(doc, progress) {
 }
 
 //______ TEST 5
+
 function fileWriteTest(doc, progress) {
     progress("File write");
     app.redraw();
@@ -258,6 +270,51 @@ function centreObj(obj) {
 }
 
 //________________________________________________________
+
+function sumTests(tests) {
+    var totals = {
+        name : "totals",
+        time: 0,
+        score: 0
+    }
+    for(var key in tests){
+        totals.time += tests[key].time || 0;
+        totals.score += tests[key].score || 0;
+    }
+    return totals;
+}
+
+//_____________________________________________
+
+function funcTimer(test) { //executes tests, returns time and score
+    var vars = {
+        name: "",
+        TIME: 0,
+        SCORE: 0
+    }
+
+    var start = new Date().getTime();
+
+    vars.name = test();
+
+    var end = new Date().getTime();
+
+    vars.time = end - start;
+    vars.score = score(vars.time);
+    return vars;
+}
+
+//_____________________________________________
+
+function score(time) {
+    var scale = 5000000; //arbitary, but hopefully interesting for comparison
+    if (time <= 1) {
+        return false; //doh... 
+    }
+    return Math.round((1 / time) * scale );
+ }
+
+ //_____________________________________________
 
 function getDoc(docName){
     var doc;
@@ -305,9 +362,10 @@ function getDoc(docName){
 
 function getCSVFile( fullPath ){
     var csvFile = File( fullPath );
-    if(csvFile.exists){
-        return csvFile;
-    }
+    // if(csvFile.exists){
+    //     alert ("CSV exsits!")
+    //     return csvFile;
+    // }
     csvFile.encoding = 'UTF8',
     csvFile.lineFeed = 'Windows'; //TODO for mac??
     csvFile.open('r',undefined,undefined);
@@ -318,44 +376,158 @@ function getCSVFile( fullPath ){
 
 function getDataFromCsvContents( arr ){//return some sort of data structure for past results
     var contents = arr;
+   // alert( "arr: " + arr.toSource());
     var delimiter = ','
+    var separator = "~" ; 
     var results = [];// will hold the data 
     var rows = contents.split('\n');
-    var keys = rows[0].split(delimiter); // get the heads 
+    var keys = rows.shift().split(delimiter); // get the heads 
 
-    for(var i = 1; i < rows.length; i++){ 
+    
+    /*
+    
+    get objects / make an index to link column headers to objects
+    var objs = getObjs( keys, separator );
+    results = addRowsToObjs(objs, rows);
+    */
 
-        var tempObj = {}; // temp object
-        var cells = rows[i].split(delimiter);// get the cells
-        // assign them to the heads
-        for(var j=0; j< keys.length;j++){
-            tempObj[keys[j]] = cells[j]; //TODO differentiate between results and info
+    // for(var i = 1; i < rows.length; i++){
+    //     //var tempObj = {}; // temp object
+    //     var cells = rows[i].split(delimiter);// get the cells
+
+
+    // }
+    var res = {};       
+    for(var i = 0; i < rows.length; i++){
+        res[keys[i]] = rows[i];
+    }
+    return res; //results;
+}
+
+function getObjs( obj, arr){
+    obj = obj || {};
+    if( arr.length ){
+        return {obj}
+    }
+}
+
+
+
+function getObjs( keys, separator ){
+/*
+date
+test~recta~time
+test~recta~score
+info~env_~
+
+data:xxxx,
+test:{
+    name:test,
+    recta:{
+        name:recta,
+        time,
+        score
+    }
+}
+
+Create an index of object references to assign to row values
+*/
+
+    var objs ={};
+    for( var i = 0; i < keys.length; i++){
+       // var thisObj = {};
+        var parts = keys[i].split(separator);
+        var tempObj = objs[parts[i]];
+        
+        
+
+        var k = parts.length;
+        while(k){
+            var a = parts.unshift()
+        }
+        
+        
+        var tempObj = {}
+        while(parts.length){
+            
         }
 
-        var resultsObj = {};
-        for(var k in obj){
-            switch( k ){
-                case /^date/:
-                    resultsObj["date"]=obj[k];
-                    break;
-                case /^test/:
-                    resultsObj["tests"][k]=obj[k];
-                    break;
-                case /^env/:
-                    resultsObj["env"][k]=obj[k];
-                    break;
-                case /^info/:
-                    resultsObj["info"][k]=obj[k];
-                    break;
-                default:
-                    $.writeln( $line + " - " + k + " : " + obj[k] + " fell through the switch statement");
-                    break;
-            }
+        var parent, child;
+        
+        for( var j = 0; j < parts.length; j++){
+            child = parts.length-1;
+            parent = parts.length-2
+            
+            objs[parts[i]] = {};
         }
-        results.push(resultsObj); // add to data
-    }       
+    } 
+    return objs;
+}
+
+
+
+// var buildParts(  parts,  a, b ){
+//     var obj = {}
+//     var l = parts.length;
+
+//     if(parts){
+//         return 
+//     }
+
+//     while(l){
+//         obj[parts.unshift] = {}
+//     }
+//     return obj;
+// }
+
+// function getObjs( keys ){
+//     var objs ={}
+//     for( var i = 0; i < keys.length; i++){
+//         var parts = keys[i].split(separator);
+//         for( var j = 0; j < parts.length; j++){
+//             for( var key in parts[j]){
+//                 objs[key] = parts[j];
+//             }
+//         }
+//     } 
+//     return objs;
+// }
+
+function addRowsToObjs( objs, rows){
+    //index from 1
     return results;
 }
+
+
+               // assign them to the heads
+
+        // for(var j=0; j< keys.length;j++){
+        //     tempObj[keys[j]] = cells[j]; //TODO differentiate between results and info
+        // }
+
+        //alert(rows.toString());
+
+        // var resultsObj = {};
+        // for(var k in tempObj){
+        //     switch( k ){
+        //         case /^date/:
+        //             resultsObj["date"]=obj[k];
+        //             break;
+        //         case /^test/:
+        //             resultsObj["tests"][k]=obj[k];
+        //             break;
+        //         case /^env/:
+        //             resultsObj["env"][k]=obj[k];
+        //             break;
+        //         case /^info/:
+        //             resultsObj["info"][k]=obj[k];
+        //             break;
+        //         default:
+        //             $.writeln( $line + " - " + k + " : " + obj[k] + " fell through the switch statement");
+        //             break;
+        //     }
+        // }
+        // results.push(resultsObj); // add to data
 
 //_____________________________________________
 
@@ -410,73 +582,24 @@ function analyseResults(results) {
 
 //_____________________________________________
 
-function sumTests(tests) {
-    var totals = {
-        name : "Test_Totals",
-        time: 0,
-        score: 0
-    }
-    for(var key in tests){
-        totals.time += tests[key].time || 0;
-        totals.score += tests[key].score || 0;
-    }
-    // for (var i = 0; i < tests.length; i++) { //sum the total time and scores from all the tests
-    //     totals.time += tests[i].time;
-    //     totals.score += tests[i].score | 0;
-    // }
-    return totals;
-}
-
-//_____________________________________________
-
-function funcTimer(test) { //executes tests, returns time and score
-    var vars = {
-        name: "",
-        time: 0,
-        score: 0
-    }
-
-    var start = new Date().getTime();
-
-    vars.name = test();
-
-    var end = new Date().getTime();
-
-    vars.time = end - start;
-    vars.score = score(vars.time);
-    return vars;
-}
-
-//_____________________________________________
-
-function score(time) {
-    var scale = 5000000; //arbitary, but hopefully interesting for comparison
-    if (time <= 1) {
-        return false; //doh... 
-    }
-    return Math.round((1 / time) * scale );
- }
-
- //_____________________________________________
-
-function objKeysToString(vari, delimiter, par){
+function objKeysToString(vari, delimiter, par){ //return a delimited string for the object, where each variable is a column header preceded by its parent path 
+    var separator = "~" ; 
     var str = "";
     var parents = par || "";
-    //alert(vari.name);
     for (var key in vari){
         if(key && vari[key] && key != "toJSON"){
             if( typeof vari[key] ==='object'){//it's a parent object 
-               // alert( key + " = object");
-               parents = (vari.name || "") +"~"+key;
+               parents = (vari.name || "").substring(0, 4) +"~"+ key.substring(0, 4);
                str+=objKeysToString( vari[key], delimiter, parents);
             }else if(key != "name"){ //it's a column header
-              //  alert( key + " = VARIABLE" );
                 str += delimiter + parents + "~"+ key ;
             }
         }
     }
     return str;
 }
+
+ //_____________________________________________
 
 function objValsToString(vari, delimiter, st){
     var str = "";
@@ -494,44 +617,45 @@ function objValsToString(vari, delimiter, st){
     return str;
 }
 
+ //_____________________________________________
+
 function recordResults(csvFile, tests, testTotals, pastResults, info) {
     var delimiter = ",";
-  
-    //alert( "::: " + objKeysToString(tests, del) );
     
-    var headers =  "date" + delimiter +
+    var headers =  "date" + //delimiter +
                 objKeysToString(tests,delimiter) + 
-                objKeysToString({"TestTotals" : testTotals},delimiter) + 
+                objKeysToString({"totals" : testTotals},delimiter) + 
                 objKeysToString(info,delimiter) + 
                 "\n";
-   // alert( $.line + " - headers::: " + headers );
-  // alert("test");
                 
     var row1 =  info.date + 
                 objValsToString(tests,delimiter) +
                 objValsToString(testTotals,delimiter) + 
                 objValsToString(info,delimiter) + 
-                "\n";
-    alert( "headers ::: " + headers + " ,___row1 :::: " + row1);
+                "\n"; //alert( "headers ::: " + headers + " ,___row1 :::: " + row1);
 
-    var oldRows = pastResults?getPastResults(pastResults, delimiter) : "";
+    var oldRows = getPastResultsStrings(pastResults, delimiter);
 
     writeToCSV( headers + row1 + oldRows, csvFile);
 }
 
-function writeToCSV(Txt, csvFile){  
+ //_____________________________________________
+
+function writeToCSV(txt, csvFile){  
     csvFile.open( "w", "TEXT", $.getenv("USER"));  csvFile.seek(0,2);   
     $.os.search(/windows/i)  != -1 ? csvFile.lineFeed = 'windows'  : csvFile.lineFeed = 'macintosh';  
-    csvFile.writeln(Txt);  
+    csvFile.writeln(txt);  
     csvFile.close();  
 } 
 
-function getPastResults( pastResults, delimiter){
+ //_____________________________________________
+
+function getPastResultsStrings( pastResults, delimiter){
     var str;
     for(var i = 0; i<pastResults.length;i++){
         str += objValsToString( pastResults[i],delimiter) + "/n";
     }
-    return str;
+    return str || "";
 }
 
 //_____________PROGRESS WINDOW UI
@@ -577,13 +701,14 @@ function progressWindow() {
 //_________________________________________
 //_________________________________________
 
-function infoIU() { //What factors might be contributing to the benchmark times?
+function infoIU(pastData, runcount, ver) { //What factors might be contributing to the benchmark times?
     var date = new Date();
     var vars = {
-        name:"Info",
+        name:"info",
+        VERSION : ver,
         date: date.toISOString(),
         Env_Info : {
-            name: "Environment_info",
+            name: "environment_info",
             illuVersion: app.version,
             os: $.os,
             screens: $.screens.length, //number of displays? TODO - calculate resolutions (left,top,right,bottom)
@@ -591,16 +716,16 @@ function infoIU() { //What factors might be contributing to the benchmark times?
             threads: $.getenv("NUMBER_OF_PROCESSORS")
         },
         Usr_Inpt :{
-            name: "User_input_variables",
-            otherDocs: false,
-            otherApps: false,
-            optimisationApp: false,
-            CPU_Model:"",
-            CPU_Mhz:"",
-            RAM_GB:"",
-            RAM_Mhz:"",
-            GPU:"",
-            HDD:""
+            name: "user_input_variables",
+            otherDocs: null,
+            otherApps: null,
+            optimisationApp: null,
+            CPU_Model:null,
+            CPU_Mhz:null,
+            RAM_GB:null,
+            RAM_Mhz:null,
+            GPU:null,
+            HDD:null
         }
     };
 
