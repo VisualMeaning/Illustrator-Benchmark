@@ -77,9 +77,9 @@ function main(runs) {
    // alert( csvFile.toString());
   // alert("CSV: " + csvFile.read());
     var pastData = csvFile ? 
-        getDataFromCsvContents(csvFile.read()) : 
+        getDataFromCsvContents(csvFile.read()) : //currently returns a flat object  
         false;
-    //alert( pastData.toString());
+  //  alert( pastData.toString());
 
     //var pastResults = analyseResults(); //average, mean, time delta, highest on record for individual tests and totals
 
@@ -382,152 +382,42 @@ function getDataFromCsvContents( arr ){//return some sort of data structure for 
     var results = [];// will hold the data 
     var rows = contents.split('\n');
     var keys = rows.shift().split(delimiter); // get the heads 
-
-    
-    /*
-    
+    //alert("keys : " + keys);
+    /*    
     get objects / make an index to link column headers to objects
     var objs = getObjs( keys, separator );
     results = addRowsToObjs(objs, rows);
     */
-
     // for(var i = 1; i < rows.length; i++){
     //     //var tempObj = {}; // temp object
     //     var cells = rows[i].split(delimiter);// get the cells
-
-
     // }
-    var res = {};       
+
+    results = getResultsArr( keys, rows, delimiter );
+
+    return results; //results;
+}
+
+//_____________________________________________
+
+function getResultsArr( keys, rows, delimiter){
+    var results = [];
+   // alert("keys :" + keys)
     for(var i = 0; i < rows.length; i++){
-        res[keys[i]] = rows[i];
-    }
-    return res; //results;
-}
-
-function getObjs( obj, arr){
-    obj = obj || {};
-    if( arr.length ){
-        return {obj}
-    }
-}
-
-
-
-function getObjs( keys, separator ){
-/*
-date
-test~recta~time
-test~recta~score
-info~env_~
-
-data:xxxx,
-test:{
-    name:test,
-    recta:{
-        name:recta,
-        time,
-        score
-    }
-}
-
-Create an index of object references to assign to row values
-*/
-
-    var objs ={};
-    for( var i = 0; i < keys.length; i++){
-       // var thisObj = {};
-        var parts = keys[i].split(separator);
-        var tempObj = objs[parts[i]];
-        
-        
-
-        var k = parts.length;
-        while(k){
-            var a = parts.unshift()
+        var row = {};
+        parts = rows[i].split(delimiter);
+        //alert( "parts : " + parts.toSource());
+        for( var j=0; j< parts.length; j++){
+            if( keys[j] && parts[j]){
+                row[keys[j]] = parts[j];
+            }
+           // $.writeln( "Key : " + row[keys[j]].toSource()+ " , val : " + parts[j]);
         }
-        
-        
-        var tempObj = {}
-        while(parts.length){
-            
-        }
-
-        var parent, child;
-        
-        for( var j = 0; j < parts.length; j++){
-            child = parts.length-1;
-            parent = parts.length-2
-            
-            objs[parts[i]] = {};
-        }
-    } 
-    return objs;
-}
-
-
-
-// var buildParts(  parts,  a, b ){
-//     var obj = {}
-//     var l = parts.length;
-
-//     if(parts){
-//         return 
-//     }
-
-//     while(l){
-//         obj[parts.unshift] = {}
-//     }
-//     return obj;
-// }
-
-// function getObjs( keys ){
-//     var objs ={}
-//     for( var i = 0; i < keys.length; i++){
-//         var parts = keys[i].split(separator);
-//         for( var j = 0; j < parts.length; j++){
-//             for( var key in parts[j]){
-//                 objs[key] = parts[j];
-//             }
-//         }
-//     } 
-//     return objs;
-// }
-
-function addRowsToObjs( objs, rows){
-    //index from 1
+        results.push(row);
+    }
+   // alert(results);
     return results;
 }
-
-
-               // assign them to the heads
-
-        // for(var j=0; j< keys.length;j++){
-        //     tempObj[keys[j]] = cells[j]; //TODO differentiate between results and info
-        // }
-
-        //alert(rows.toString());
-
-        // var resultsObj = {};
-        // for(var k in tempObj){
-        //     switch( k ){
-        //         case /^date/:
-        //             resultsObj["date"]=obj[k];
-        //             break;
-        //         case /^test/:
-        //             resultsObj["tests"][k]=obj[k];
-        //             break;
-        //         case /^env/:
-        //             resultsObj["env"][k]=obj[k];
-        //             break;
-        //         case /^info/:
-        //             resultsObj["info"][k]=obj[k];
-        //             break;
-        //         default:
-        //             $.writeln( $line + " - " + k + " : " + obj[k] + " fell through the switch statement");
-        //             break;
-        //     }
-        // }
-        // results.push(resultsObj); // add to data
 
 //_____________________________________________
 
@@ -603,13 +493,11 @@ function objKeysToString(vari, delimiter, par){ //return a delimited string for 
 
 function objValsToString(vari, delimiter, st){
     var str = "";
-    
     for (var key in vari){
         if(key && vari[key] && key != "toJSON"){
             if( typeof vari[key] ==='object'){//it's a parent object 
                str+=objValsToString( vari[key], delimiter);
             }else if(key != "name"){ //it's a column header
-              //  alert( key + " = VARIABLE" );
                 str += delimiter + vari[key];
             }
         }
@@ -634,6 +522,8 @@ function recordResults(csvFile, tests, testTotals, pastResults, info) {
                 objValsToString(info,delimiter) + 
                 "\n"; //alert( "headers ::: " + headers + " ,___row1 :::: " + row1);
 
+    //alert( pastResults.toSource() );
+
     var oldRows = getPastResultsStrings(pastResults, delimiter);
 
     writeToCSV( headers + row1 + oldRows, csvFile);
@@ -652,9 +542,12 @@ function writeToCSV(txt, csvFile){
 
 function getPastResultsStrings( pastResults, delimiter){
     var str;
+    //alert(pastResults.toSource());
     for(var i = 0; i<pastResults.length;i++){
         str += objValsToString( pastResults[i],delimiter) + "/n";
     }
+    //alert(str);
+
     return str || "";
 }
 
@@ -1676,3 +1569,131 @@ function displayResults(tests, results, pastResults, info, runCount) {
 
     benchResultsWin.show();
 }
+
+
+
+
+// function getObjs( obj, arr){
+//     obj = obj || {};
+//     if( arr.length ){
+//         return {obj:""};
+//     }
+// }
+
+
+
+/*function getObjs( keys, separator ){
+/*
+date
+test~recta~time
+test~recta~score
+info~env_~
+
+data:xxxx,
+test:{
+    name:test,
+    recta:{
+        name:recta,
+        time,
+        score
+    }
+}
+
+Create an index of object references to assign to row values
+*//*
+
+    var objs ={};
+    for( var i = 0; i < keys.length; i++){
+       // var thisObj = {};
+        var parts = keys[i].split(separator);
+        var tempObj = objs[parts[i]];
+        
+        
+
+        var k = parts.length;
+        while(k){
+            var a = parts.unshift()
+        }
+        
+        
+        var tempObj = {}
+        while(parts.length){
+            
+        }
+
+        var parent, child;
+        
+        for( var j = 0; j < parts.length; j++){
+            child = parts.length-1;
+            parent = parts.length-2
+            
+            objs[parts[i]] = {};
+        }
+    } 
+    return objs;
+}*/
+
+
+
+// var buildParts(  parts,  a, b ){
+//     var obj = {}
+//     var l = parts.length;
+
+//     if(parts){
+//         return 
+//     }
+
+//     while(l){
+//         obj[parts.unshift] = {}
+//     }
+//     return obj;
+// }
+
+// function getObjs( keys ){
+//     var objs ={}
+//     for( var i = 0; i < keys.length; i++){
+//         var parts = keys[i].split(separator);
+//         for( var j = 0; j < parts.length; j++){
+//             for( var key in parts[j]){
+//                 objs[key] = parts[j];
+//             }
+//         }
+//     } 
+//     return objs;
+// }
+
+// function addRowsToObjs( objs, rows){
+//     //index from 1
+//     return results;
+// }
+
+
+               // assign them to the heads
+
+        // for(var j=0; j< keys.length;j++){
+        //     tempObj[keys[j]] = cells[j]; //TODO differentiate between results and info
+        // }
+
+        //alert(rows.toString());
+
+        // var resultsObj = {};
+        // for(var k in tempObj){
+        //     switch( k ){
+        //         case /^date/:
+        //             resultsObj["date"]=obj[k];
+        //             break;
+        //         case /^test/:
+        //             resultsObj["tests"][k]=obj[k];
+        //             break;
+        //         case /^env/:
+        //             resultsObj["env"][k]=obj[k];
+        //             break;
+        //         case /^info/:
+        //             resultsObj["info"][k]=obj[k];
+        //             break;
+        //         default:
+        //             $.writeln( $line + " - " + k + " : " + obj[k] + " fell through the switch statement");
+        //             break;
+        //     }
+        // }
+        // results.push(resultsObj); // add to data
