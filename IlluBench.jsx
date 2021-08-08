@@ -409,7 +409,7 @@ function getResultsArr( keys, rows, delimiter){
         //alert( "parts : " + parts.toSource());
         for( var j=0; j< parts.length; j++){
             if( keys[j] && parts[j]){
-                row[keys[j]] = parts[j];
+                row[keys[j]] = parts[j] + ""; //String to preserve ordinality
             }
            // $.writeln( "Key : " + row[keys[j]].toSource()+ " , val : " + parts[j]);
         }
@@ -502,10 +502,8 @@ function objValsToString(vari, delimiter, st){
             }
         }
     }
-    return str;
+    return str.replace(/^','/m,"");
 }
-
- //_____________________________________________
 
 function recordResults(csvFile, tests, testTotals, pastResults, info) {
     var delimiter = ",";
@@ -523,10 +521,20 @@ function recordResults(csvFile, tests, testTotals, pastResults, info) {
                 "\n"; //alert( "headers ::: " + headers + " ,___row1 :::: " + row1);
 
     //alert( pastResults.toSource() );
-
     var oldRows = getPastResultsStrings(pastResults, delimiter);
 
     writeToCSV( headers + row1 + oldRows, csvFile);
+}
+
+
+ //_____________________________________________
+
+function getPastResultsStrings( pastResults, delimiter){
+    var str;
+    for(var i = 0; i<pastResults.length;i++){
+        str += objValsToString( pastResults[i],delimiter) + "\n";
+    }
+    return str || "";
 }
 
  //_____________________________________________
@@ -537,19 +545,6 @@ function writeToCSV(txt, csvFile){
     csvFile.writeln(txt);  
     csvFile.close();  
 } 
-
- //_____________________________________________
-
-function getPastResultsStrings( pastResults, delimiter){
-    var str;
-    //alert(pastResults.toSource());
-    for(var i = 0; i<pastResults.length;i++){
-        str += objValsToString( pastResults[i],delimiter) + "/n";
-    }
-    //alert(str);
-
-    return str || "";
-}
 
 //_____________PROGRESS WINDOW UI
 //_________________________________________
@@ -1562,7 +1557,7 @@ function displayResults(tests, results, pastResults, info, runCount) {
         runAgainButton.text = "Run again"; 
         runAgainButton.onClick = function(){
             benchResultsWin.close();
-            app.activeDocument.close(SaveOptions.DONOTSAVECHANGES);
+           // app.activeDocument.close(SaveOptions.DONOTSAVECHANGES);
             app.redraw();
             return main();
         }
