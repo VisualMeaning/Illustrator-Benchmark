@@ -408,8 +408,8 @@ function getResultsArr( keys, rows, delimiter){
         parts = rows[i].split(delimiter);
         //alert( "parts : " + parts.toSource());
         for( var j=0; j< parts.length; j++){
-            if( keys[j] && parts[j]){
-                row[keys[j]] = parts[j] + ""; //String to preserve ordinality
+            if( keys[j] && parts[j] ){
+                row[keys[j]] = parts[j]; //String to preserve ordinality
             }
            // $.writeln( "Key : " + row[keys[j]].toSource()+ " , val : " + parts[j]);
         }
