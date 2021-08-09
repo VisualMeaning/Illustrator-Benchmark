@@ -62,7 +62,7 @@ if (!Date.prototype.toISOString) {
 main();
 
 function main(runs) {
-    var VERSION = 0.5; //script version
+    var VERSION = 0.6; //script version
     var runCount = runs || 0;
     var docName = "Illustrator Benchmark Doc.ai";
     var doc = getDoc(docName); //try and get a saved doc (with a path), or an unsaved one if prefered. 
@@ -89,7 +89,6 @@ function main(runs) {
        return
     }
 
-   // var doc = app.documents.add();
     app.executeMenuCommand('doc-color-rgb'); //TODO might be interesting to compare results in CYMK!
 
     doc.pageItems.removeAll();
@@ -151,9 +150,9 @@ function rectanglesTest(obj, progress) {
     var rects = [];
     progress("Rectangles test");
 
-    for (var i = 0; i < 20; i++) {
+    for (var i = 0; i < 40; i++) {
         rects[i] = [];
-        for (var j = 0; j < 8; j++) {
+        for (var j = 0; j < 40; j++) {
             rects[i][j] = doc.pathItems.rectangle(-3, 3, 4, 4);
             rects[i][j].move(obj, ElementPlacement.PLACEATEND);
             rects[i][j].translate(j + (i * 7), j * 20);
@@ -198,7 +197,7 @@ function effectsTest(obj, progress) {
     var i=0;
     var efct = '<LiveEffect name="Adobe Deform"><Dict data="R DeformValue 0.45 R DeformVert 0 B Rotate 0 I DeformStyle 1 R DeformHoriz 0 "/></LiveEffect>';
 
-    for ( var i = 0; i < obj.pageItems.length; i+=25) { 
+    for ( var i = 0; i < obj.pageItems.length; i+=19) { 
         obj.pageItems[i].applyEffect(efct);
         app.redraw();
     }  
@@ -216,7 +215,7 @@ function zoomTest(doc, progress) {
     progress("Zoom");
     var view = doc.views[0];
     view.zoom = 1;
-    var inc = 0.1; // 0.01; //increment
+    var inc = 0.01; // 0.01; //increment
 
     for (var a = 1; a > 0.3; a -= inc) {
         view.zoom = a;
@@ -237,13 +236,13 @@ function fileWriteTest(doc, progress) {
     progress("File write");
     app.redraw();
 
-    for( var i=0; i<1; i++){
+    for( var i=0; i<2; i++){
         var dest = doc.path || $.HOMEPATH;
         var exportOptions = new ExportOptionsPNG24();
         exportOptions.antiAliasing = false;
         exportOptions.transparency = false;
         exportOptions.saveAsHTML = true;
-        exportOptions.horizontalScale = exportOptions.verticalScale = (i + 1) * 100;
+        exportOptions.horizontalScale = exportOptions.verticalScale = (i + 1) * 250;
 
         var type = ExportType.PNG24;
         var filePNG = new File();
