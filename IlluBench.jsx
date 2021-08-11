@@ -62,22 +62,23 @@ if (!Date.prototype.toISOString) {
 main();
 
 function main(runs) {
-    var VERSION = 0.6; //script version
+    var VERSION = 0.61; //script version
+    var delimiter = '\t'
     var runCount = runs || 0;
     var docName = "Illustrator Benchmark Doc.ai";
     var doc = getDoc(docName); //try and get a saved doc (with a path), or an unsaved one if prefered. 
 
-    var csvFilename = "Illustrator Benchmark Data.csv";
-    var csvFile = getCSVFile( doc.path + "/" + csvFilename );
-  //  alert( csvFile.read());
+    var tsvFilename = "Illustrator Benchmark Data.tsv";
+    var tsvFile = getCSVFile( doc.path + "/" + tsvFilename );
+  //  alert( tsvFile.read());
 
-    // var csvFile = doc.path ?
-    //     getCSVFile(doc.path + "/" + csvFilename) :
+    // var tsvFile = doc.path ?
+    //     getCSVFile(doc.path + "/" + tsvFilename) :
     //     false; //if there's an appropriately named csv file already in this location, get the contents 
-   // alert( csvFile.toString());
-  // alert("CSV: " + csvFile.read());
-    var pastData = csvFile ? 
-        getDataFromCsvContents(csvFile.read()) : //currently returns a flat object  
+   // alert( tsvFile.toString());
+  // alert("CSV: " + tsvFile.read());
+    var pastData = tsvFile ? 
+        getDataFromTsvContents(tsvFile.read(), delimiter) : //currently returns a flat object  
         false;
   //  alert( pastData.toString());
 
@@ -89,7 +90,8 @@ function main(runs) {
        return
     }
 
-    app.executeMenuCommand('doc-color-rgb'); //TODO might be interesting to compare results in CYMK!
+    //app.executeMenuCommand('doc-color-rgb'); //TODO might be interesting to compare results in CYMK!
+    //doc.documentColorSpace = DocumentColorSpace.RGB;
 
     doc.pageItems.removeAll();
 
@@ -127,8 +129,8 @@ function main(runs) {
 
    // $.writeln( $.line + " - testTotals -> " + testTotals.name);
 
-    if(csvFile){
-        recordResults(csvFile, tests, testTotals, pastData, info); //write time/score & info to illuBench record.txt file
+    if(tsvFile){
+        recordResults(tsvFile, tests, testTotals, pastData, info, delimiter); //write time/score & info to illuBench record.txt file
     }
 
     displayResults(tests, testTotals, pastData, info, runCount); //Tell us what happened
@@ -153,12 +155,19 @@ function rectanglesTest(obj, progress) {
     for (var i = 0; i < 40; i++) {
         rects[i] = [];
         for (var j = 0; j < 40; j++) {
-            rects[i][j] = doc.pathItems.rectangle(-3, 3, 4, 4);
+            rects[i][j] = doc.pathItems.rectangle(-4, 5, 5.5, 6.1);
             rects[i][j].move(obj, ElementPlacement.PLACEATEND);
-            rects[i][j].translate(j + (i * 7), j * 20);
+            rects[i][j].translate(j + (i * 7), j * 12);
             rects[i][j].fillColor.red = rects[i][j].strokeColor.blue = 20 + (Math.round(Math.random() * 70));
-            rects[i][j].fillColor.green = rects[i][j].strokeColor.red = 90 + (Math.round(Math.random() * 65));
+            rects[i][j].fillColor.green = rects[i][j].strokeColor.red = 80 + (Math.round(Math.random() * 65));
             rects[i][j].fillColor.blue = rects[i][j].strokeColor.green = 160 + (Math.round(Math.random() * 30));
+        }
+        app.redraw();
+        $.sleep(40);//just to down-weight the score for this test. It's less important than the others.
+        for (var k = 0; k < 40; k++) {
+            rects[i][k].fillColor.red = rects[i][k].strokeColor.blue = 25 + (Math.round(Math.random() * 50));
+            rects[i][k].fillColor.green = rects[i][k].strokeColor.red = 95 + (Math.round(Math.random() * 60));
+            rects[i][k].fillColor.blue = rects[i][k].strokeColor.green = 170 + (Math.round(Math.random() * 40));
         }
     }
     centreObj(obj);
@@ -325,12 +334,12 @@ function getDoc(docName){
         }
     } 
 
-    doc = app.documents.add(); //new doc then
+    doc = app.documents.add(DocumentColorSpace.RGB); //new doc then
     doc.name = docName;
     
     var location = Folder($.HOMEPATH)
     var location = Folder.selectDialog( //where to save it...
-        "The benchmark needs to make a new document to run in.\
+        "The benchmark needs to make a new document in which to run.\
          \nPlease choose a location to save it. \
          \rIf you select a folder, the script will automatically\
          \nsave the results to a CSV file in that same location.\
@@ -360,25 +369,24 @@ function getDoc(docName){
 //_____________________________________________
 
 function getCSVFile( fullPath ){
-    var csvFile = File( fullPath );
-    // if(csvFile.exists){
+    var tsvFile = File( fullPath );
+    // if(tsvFile.exists){
     //     alert ("CSV exsits!")
-    //     return csvFile;
+    //     return tsvFile;
     // }
-    csvFile.encoding = 'UTF8',
-    csvFile.lineFeed = 'Windows'; //TODO for mac??
-    csvFile.open('r',undefined,undefined);
-    return csvFile;
+    tsvFile.encoding = 'UTF8',
+    tsvFile.lineFeed = 'Windows'; //TODO for mac??
+    tsvFile.open('r',undefined,undefined);
+    return tsvFile;
 }
 
 //_____________________________________________
 
-function getDataFromCsvContents( arr ){//return some sort of data structure for past results
+function getDataFromTsvContents( arr, delimiter ){//return some sort of data structure for past results
     var contents = arr;
    // alert( "arr: " + arr.toSource());
-    var delimiter = ','
     var separator = "~" ; 
-    var results = [];// will hold the data 
+    //var results = [];// will hold the data 
     var rows = contents.split('\n');
     var keys = rows.shift().split(delimiter); // get the heads 
     //alert("keys : " + keys);
@@ -392,7 +400,7 @@ function getDataFromCsvContents( arr ){//return some sort of data structure for 
     //     var cells = rows[i].split(delimiter);// get the cells
     // }
 
-    results = getResultsArr( keys, rows, delimiter );
+    var results = getResultsArr( keys, rows, delimiter );
 
     return results; //results;
 }
@@ -408,7 +416,7 @@ function getResultsArr( keys, rows, delimiter){
         //alert( "parts : " + parts.toSource());
         for( var j=0; j< parts.length; j++){
             if( keys[j] && parts[j] ){
-                row[keys[j]] = parts[j]; //String to preserve ordinality
+                row[keys[j] + ""] = parts[j]; //String to preserve ordinality
             }
            // $.writeln( "Key : " + row[keys[j]].toSource()+ " , val : " + parts[j]);
         }
@@ -476,14 +484,14 @@ function objKeysToString(vari, delimiter, par){ //return a delimited string for 
     var str = "";
     var parents = par || "";
     for (var key in vari){
-        if(key && vari[key] && key != "toJSON"){
+        //if(key && vari[key] && key != "toJSON"){
             if( typeof vari[key] ==='object'){//it's a parent object 
                parents = (vari.name || "").substring(0, 4) +"~"+ key.substring(0, 4);
                str+=objKeysToString( vari[key], delimiter, parents);
             }else if(key != "name"){ //it's a column header
                 str += delimiter + parents + "~"+ key ;
             }
-        }
+       // }
     }
     return str;
 }
@@ -504,8 +512,7 @@ function objValsToString(vari, delimiter, st){
     return str.replace(/^','/m,"");
 }
 
-function recordResults(csvFile, tests, testTotals, pastResults, info) {
-    var delimiter = ",";
+function recordResults(tsvFile, tests, testTotals, pastResults, info, delimiter) {
     
     var headers =  "date" + //delimiter +
                 objKeysToString(tests,delimiter) + 
@@ -522,7 +529,7 @@ function recordResults(csvFile, tests, testTotals, pastResults, info) {
     //alert( pastResults.toSource() );
     var oldRows = getPastResultsStrings(pastResults, delimiter);
 
-    writeToCSV( headers + row1 + oldRows, csvFile);
+    writeToCSV( headers + row1 + oldRows, tsvFile);
 }
 
 
@@ -538,11 +545,11 @@ function getPastResultsStrings( pastResults, delimiter){
 
  //_____________________________________________
 
-function writeToCSV(txt, csvFile){  
-    csvFile.open( "w", "TEXT", $.getenv("USER"));  csvFile.seek(0,2);   
-    $.os.search(/windows/i)  != -1 ? csvFile.lineFeed = 'windows'  : csvFile.lineFeed = 'macintosh';  
-    csvFile.writeln(txt);  
-    csvFile.close();  
+function writeToCSV(txt, tsvFile){  
+    tsvFile.open( "w", "TEXT", $.getenv("USER"));  tsvFile.seek(0,2);   
+    $.os.search(/windows/i)  != -1 ? tsvFile.lineFeed = 'windows'  : tsvFile.lineFeed = 'macintosh';  
+    tsvFile.writeln(txt);  
+    tsvFile.close();  
 } 
 
 //_____________PROGRESS WINDOW UI
@@ -1119,7 +1126,7 @@ function displayResults(tests, results, pastResults, info, runCount) {
         testRectPanel.margins = 10; 
 
     var statictext1 = testRectPanel.add("statictext", undefined, undefined, {name: "statictext1"}); 
-        statictext1.text = "Time: "; 
+        statictext1.text = "Time:"; 
 
     var rectTimeText = testRectPanel.add("statictext", undefined, undefined, {name: "rectTimeText"}); 
     rectTimeText.text = tests.rectangles.time;
@@ -1140,7 +1147,7 @@ function displayResults(tests, results, pastResults, info, runCount) {
         testTransPanel.margins = 10; 
 
     var statictext3 = testTransPanel.add("statictext", undefined, undefined, {name: "statictext3"}); 
-        statictext3.text = "Time: "; 
+        statictext3.text = "Time:"; 
 
     var transTimeText = testTransPanel.add("statictext", undefined, undefined, {name: "transTimeText"}); 
     transTimeText.text = tests.transformations.time;
@@ -1161,7 +1168,7 @@ function displayResults(tests, results, pastResults, info, runCount) {
         testEffPanel.margins = 10; 
 
     var statictext5 = testEffPanel.add("statictext", undefined, undefined, {name: "statictext5"}); 
-        statictext5.text = "Time: "; 
+        statictext5.text = "Time:"; 
 
     var effTimeText = testEffPanel.add("statictext", undefined, undefined, {name: "effTimeText"}); 
     effTimeText.text = tests.effects.time;
@@ -1182,7 +1189,7 @@ function displayResults(tests, results, pastResults, info, runCount) {
         testZoomPanel.margins = 10; 
 
     var statictext7 = testZoomPanel.add("statictext", undefined, undefined, {name: "statictext7"}); 
-        statictext7.text = "Time: "; 
+        statictext7.text = "Time:"; 
 
     var zoomTimeText = testZoomPanel.add("statictext", undefined, undefined, {name: "zoomTimeText"}); 
     zoomTimeText.text = tests.zoom.time;
@@ -1203,7 +1210,7 @@ function displayResults(tests, results, pastResults, info, runCount) {
         testFilePanel.margins = 10; 
 
     var statictext9 = testFilePanel.add("statictext", undefined, undefined, {name: "statictext9"}); 
-        statictext9.text = "Time: "; 
+        statictext9.text = "Time:"; 
 
     var fileTimeText = testFilePanel.add("statictext", undefined, undefined, {name: "fileTimeText"}); 
     fileTimeText.text = tests.filewrite.time;
@@ -1230,7 +1237,7 @@ function displayResults(tests, results, pastResults, info, runCount) {
         totalPanel.margins = 33; 
 
     var statictext11 = totalPanel.add("statictext", undefined, undefined, {name: "statictext11"}); 
-        statictext11.text = "Time: "; 
+        statictext11.text = "Time:"; 
 
     var totalTimeText = totalPanel.add("statictext", undefined, undefined, {name: "totalTimeText"}); 
     totalTimeText.text = results.time;
@@ -1293,7 +1300,7 @@ function displayResults(tests, results, pastResults, info, runCount) {
         avgRectPanel.margins = 10; 
 
     var statictext13 = avgRectPanel.add("statictext", undefined, undefined, {name: "statictext13"}); 
-        statictext13.text = "Time: "; 
+        statictext13.text = "Time:"; 
 
     var avRectTimeText = avgRectPanel.add("statictext", undefined, undefined, {name: "avRectTimeText"}); 
 
@@ -1312,7 +1319,7 @@ function displayResults(tests, results, pastResults, info, runCount) {
         avgTransPanel.margins = 10; 
 
     var statictext15 = avgTransPanel.add("statictext", undefined, undefined, {name: "statictext15"}); 
-        statictext15.text = "Time: "; 
+        statictext15.text = "Time:"; 
 
     var avTransTimeText = avgTransPanel.add("statictext", undefined, undefined, {name: "avTransTimeText"}); 
 
@@ -1331,7 +1338,7 @@ function displayResults(tests, results, pastResults, info, runCount) {
         avgEffPanel.margins = 10; 
 
     var statictext17 = avgEffPanel.add("statictext", undefined, undefined, {name: "statictext17"}); 
-        statictext17.text = "Time: "; 
+        statictext17.text = "Time:"; 
 
     var avEffTimeText = avgEffPanel.add("statictext", undefined, undefined, {name: "avEffTimeText"}); 
 
@@ -1350,7 +1357,7 @@ function displayResults(tests, results, pastResults, info, runCount) {
         avgZoomPanel.margins = 10; 
 
     var statictext19 = avgZoomPanel.add("statictext", undefined, undefined, {name: "statictext19"}); 
-        statictext19.text = "Time: "; 
+        statictext19.text = "Time:"; 
 
     var aZoomTimeText = avgZoomPanel.add("statictext", undefined, undefined, {name: "aZoomTimeText"}); 
 
@@ -1369,7 +1376,7 @@ function displayResults(tests, results, pastResults, info, runCount) {
         avgFilePanel.margins = 10; 
 
     var statictext21 = avgFilePanel.add("statictext", undefined, undefined, {name: "statictext21"}); 
-        statictext21.text = "Time: "; 
+        statictext21.text = "Time:"; 
 
     var avFileTimeText = avgFilePanel.add("statictext", undefined, undefined, {name: "avFileTimeText"}); 
 
@@ -1393,12 +1400,12 @@ function displayResults(tests, results, pastResults, info, runCount) {
         avTotalPanel.margins = 33; 
 
     var statictext23 = avTotalPanel.add("statictext", undefined, undefined, {name: "statictext23"}); 
-        statictext23.text = "Time: "; 
+        statictext23.text = "Time:"; 
 
     var avTotalTimeText = avTotalPanel.add("statictext", undefined, undefined, {name: "avTotalTimeText"}); 
 
     var statictext24 = avTotalPanel.add("statictext", undefined, undefined, {name: "statictext24"}); 
-        statictext24.text = "Score: "; 
+        statictext24.text = "Score:"; 
 
     var avTotalScoreText = avTotalPanel.add("statictext", undefined, undefined, {name: "avTotalScoreText"}); 
 
@@ -1428,7 +1435,7 @@ function displayResults(tests, results, pastResults, info, runCount) {
         highRectPanel.margins = 10; 
 
     var statictext25 = highRectPanel.add("statictext", undefined, undefined, {name: "statictext25"}); 
-        statictext25.text = "Time: "; 
+        statictext25.text = "Time:"; 
 
     var highRectTimeText = highRectPanel.add("statictext", undefined, undefined, {name: "highRectTimeText"}); 
 
@@ -1447,7 +1454,7 @@ function displayResults(tests, results, pastResults, info, runCount) {
         highTransPanel.margins = 10; 
 
     var statictext27 = highTransPanel.add("statictext", undefined, undefined, {name: "statictext27"}); 
-        statictext27.text = "Time: "; 
+        statictext27.text = "Time:"; 
 
     var highTransTimeText = highTransPanel.add("statictext", undefined, undefined, {name: "highTransTimeText"}); 
 
@@ -1466,7 +1473,7 @@ function displayResults(tests, results, pastResults, info, runCount) {
         highEffPanel.margins = 10; 
 
     var statictext29 = highEffPanel.add("statictext", undefined, undefined, {name: "statictext29"}); 
-        statictext29.text = "Time: "; 
+        statictext29.text = "Time:"; 
 
     var highEffTimeText = highEffPanel.add("statictext", undefined, undefined, {name: "highEffTimeText"}); 
 
@@ -1485,7 +1492,7 @@ function displayResults(tests, results, pastResults, info, runCount) {
         highZoomPanel.margins = 10; 
 
     var statictext31 = highZoomPanel.add("statictext", undefined, undefined, {name: "statictext31"}); 
-        statictext31.text = "Time: "; 
+        statictext31.text = "Time:"; 
 
     var highZoomTimeText = highZoomPanel.add("statictext", undefined, undefined, {name: "highZoomTimeText"}); 
 
@@ -1504,7 +1511,7 @@ function displayResults(tests, results, pastResults, info, runCount) {
         highFilePanel.margins = 10; 
 
     var statictext33 = highFilePanel.add("statictext", undefined, undefined, {name: "statictext33"}); 
-        statictext33.text = "Time: "; 
+        statictext33.text = "Time:"; 
 
     var highFileTimeText = highFilePanel.add("statictext", undefined, undefined, {name: "highFileTimeText"}); 
 
@@ -1528,7 +1535,7 @@ function displayResults(tests, results, pastResults, info, runCount) {
         highTotalPanel.margins = 33; 
 
     var statictext35 = highTotalPanel.add("statictext", undefined, undefined, {name: "statictext35"}); 
-        statictext35.text = "Time: "; 
+        statictext35.text = "Time:"; 
 
     var highTotalTimeText = highTotalPanel.add("statictext", undefined, undefined, {name: "highTotalTimeText"}); 
 
