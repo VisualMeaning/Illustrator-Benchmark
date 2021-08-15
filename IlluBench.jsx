@@ -25,7 +25,6 @@
 */
 
 // @target illustrator
-// include "json2.js"
 
 if (!Date.prototype.toISOString) {
     (function() {
@@ -63,28 +62,28 @@ main();
 
 function main(runs) {
     var VERSION = 0.61; //script version
-    var delimiter = '\t'
+    var delimiter = ',';//'\t'
     var runCount = runs || 0;
     var docName = "Illustrator Benchmark Doc.ai";
     var doc = getDoc(docName); //try and get a saved doc (with a path), or an unsaved one if prefered. 
 
-    var tsvFilename = "Illustrator Benchmark Data.tsv";
-    var tsvFile = getCSVFile( doc.path + "/" + tsvFilename );
-  //  alert( tsvFile.read());
+    var csvFilename = "Illustrator Benchmark Data.csv";
+    var csvFile = getCSVFile( doc.path + "/" + csvFilename );
+  //  alert( csvFile.read());
 
-    // var tsvFile = doc.path ?
-    //     getCSVFile(doc.path + "/" + tsvFilename) :
+    // var csvFile = doc.path ?
+    //     getCSVFile(doc.path + "/" + csvFilename) :
     //     false; //if there's an appropriately named csv file already in this location, get the contents 
-   // alert( tsvFile.toString());
-  // alert("CSV: " + tsvFile.read());
-    var pastData = tsvFile ? 
-        getDataFromTsvContents(tsvFile.read(), delimiter) : //currently returns a flat object  
+   // alert( csvFile.toString());
+  // alert("CSV: " + csvFile.read());
+    var pastData = csvFile ? 
+        getDataFromCsvContents(csvFile.read(), delimiter) : //currently returns a flat object  
         false;
   //  alert( pastData.toString());
 
     //var pastResults = analyseResults(); //average, mean, time delta, highest on record for individual tests and totals
 
-    var info = infoIU(pastData,runCount, VERSION); //factors that might affect the results - to append to the results for this run
+    var info = infoUI(pastData,runCount, VERSION); //factors that might affect the results - to append to the results for this run
 
     if (!info) {
        return
@@ -126,11 +125,10 @@ function main(runs) {
     // Tell us what happened
 
     var testTotals = sumTests(tests); //total time and score for this test
+    //alert( $.line + " - testTotals -> " + testTotals.toSource());
 
-   // $.writeln( $.line + " - testTotals -> " + testTotals.name);
-
-    if(tsvFile){
-        recordResults(tsvFile, tests, testTotals, pastData, info, delimiter); //write time/score & info to illuBench record.txt file
+    if(csvFile){
+        recordResults(csvFile, tests, testTotals, pastData, info, delimiter); //write time/score & info to illuBench record.txt file
     }
 
     displayResults(tests, testTotals, pastData, info, runCount); //Tell us what happened
@@ -152,7 +150,7 @@ function rectanglesTest(obj, progress) {
     var rects = [];
     progress("Rectangles test");
 
-    for (var i = 0; i < 40; i++) {
+    for (var i = 0; i < 3; i++) {
         rects[i] = [];
         for (var j = 0; j < 40; j++) {
             rects[i][j] = doc.pathItems.rectangle(-4, 5, 5.5, 6.1);
@@ -202,16 +200,72 @@ function effectsTest(obj, progress) {
     https://community.adobe.com/t5/illustrator/pageitem-applyeffect-liveeffectxml/m-p/7315221
     https://community.adobe.com/t5/illustrator/scripting-live-effects/m-p/11744702 
     https://github.com/mark1bean/ai-live-effect-functions/blob/master/README.md
-    */
-    var i=0;
-    var efct = '<LiveEffect name="Adobe Deform"><Dict data="R DeformValue 0.45 R DeformVert 0 B Rotate 0 I DeformStyle 1 R DeformHoriz 0 "/></LiveEffect>';
 
+    投稿者: ten_a <-
+    https://translate.google.com/translate?sl=auto&tl=en&u=https://ten-artai.com/2015/12/318/
+        #Drop Shadow
+        <LiveEffect name="Adobe Drop Shadow"><Dict data="R horz 7 I blnd 1 R opac 0.75 R dark 100 B pair 1 I csrc 0 R vert 7 R blur 5 B usePSLBlur 1 I Adobe Effect Expand Before Version 16 " /></LiveEffect>
+
+        #Fuzzy Mask
+        <LiveEffect name="Adobe Fuzzy Mask"><Dict data="R Radius 5 " /></LiveEffect>
+
+        #Inner Grow
+        <LiveEffect index="0″ major="1″ minor="0″ name="Adobe Inner Glow"><Dict data="I gtyp 1 I blnd 2 R opac 0.75 R blur 5 “><Entry name="gclr" valueType="F"><Fill color="1 0 0 0 0″/></Entry></Dict></LiveEffect>
+
+        #Outer Grow
+        <LiveEffect name="Adobe Outer Glow"><Dict data="I Adobe Effect Expand Before Version 16 I blnd 2 R opac 0.75 R blur 5 B usePSLBlur 1 " /></LiveEffect>
+
+        #Scribble Fill
+        <LiveEffect name="Adobe Scribble Fill"><Dict data="R Spacing 5 R EdgeOverlap 0 R Scribbliness 0.05 R StrokeWidth 3 R Angle 30 R EdgeOverlapVariation 5 R SpacingVariation 0.5 R ScribbleVariation 0.01 " /></LiveEffect>
+
+        #Round Corners
+        <LiveEffect name="Adobe Round Corners"><Dict data="R radius 10 “/></LiveEffect>
+
+        #Outline Type
+        <LiveEffect index="0″ isPre="1″ major="1″ minor="0″ name="Adobe Outline Type"><Dict /></LiveEffect>
+
+        #Outline Stroke
+        <LiveEffect index="0″ major="1″ minor="0″ name="Adobe Outline Stroke"><Dict /></LiveEffect>
+
+        #Offset Path
+        <LiveEffect name="Adobe Offset Path"><Dict data="R mlim 4 R ofst 10 I jntp 2 " /></LiveEffect>
+
+        #Zigzag
+        <LiveEffect name="Adobe Zigzag"><Dict data="R roundness 0 R absoluteness 1 R relAmount 10 R ridges 4 R amount 10.006 " /></LiveEffect>
+
+        #Free Disort
+        <LiveEffect name="Adobe Free Distort"><Dict data="R src3h 278 R src2h 178 R dst2v -263 R src2v -263 R src0h 178 R dst2h 178 R src3v -263 R dst3v -263 R dst0v -163 R src1h 278 R src1v -163 R src0v -163 R dst0h 178 R dst1v -163 R dst1h 278 R dst3h 278 " /></LiveEffect>
+
+        #Punck & Bloat
+        <LiveEffect name="Adobe Punk and Bloat"><Dict data="R d_factor 10 " /></LiveEffect>
+
+        #Twirl
+        <LiveEffect name="Adobe Twirl"><Dict data="R angle 30 " /></LiveEffect>
+
+        #Pathfinder
+        <LiveEffect name="Adobe Pathfinder"><Dict data="R TrapTintTolerance 0.05 B ExtractUnpainted 1 B TrapConvertCustom 0 R TrapAspect 1 B ConvertCustom 1 R TrapMaxTint 1 R Mix 0.5 B RemovePoints 0 I Command 0 R TrapThickness 0.25 R TrapTint 0.4 B TrapReverse 0 R Precision 10 “><Entry name="DisplayString" value="" valueType="S" /></Dict><LiveEffect>
+
+        #3D Effect
+        <LiveEffect name="Adobe 3D Effect"><Dict data="B showHiddenSurfaces 0 R cameraPerspective 0 I rotationPresetKey 9 B paramsDictionaryInitialized 1 I 3Dversion 2 B extrudeCap 1 R mat_12 -0.278 R mat_13 0 R mat_20 -0.456 R mat_21 0.248 R mat_22 0.855 R mat_23 0 R mat_30 0 R mat_31 0 R mat_32 0 R mat_33 1 R rotX -18 R rotY -26 R rotZ 8 R revolveAngle 360 B revolveCap 1 R revolveOffset 0 I revolveAxisMode 0 I surfaceStyle 3 R surfaceAmbient 50 R surfaceMatte 40 R surfaceGloss 10 R blendSteps 25 B invisibleGeo 0 I shadeMode 3 B preserveSpots 0 I numLights 1 B shadeMaps 0 I numArtMaps 0 R mat_11 0.961 R mat_10 0.002 R mat_03 0 R mat_02 0.438 R mat_01 0.125 R mat_00 0.89 I effectStyle 0 R bevelHeight 4 B bevelExtentIn 1 R extrudeDepth 50 “><Entry name="shadeColor" valueType="F"><Fill color="1 0 1 1 0″/></Entry><Entry name="light0″ valueType="D"><Dict data="R lightDirX 0.39 R lightDirY 0.33 R lightDirZ -0.85 R lightPosX 0 R lightPosY 0 R lightPosZ -1 R lightIntensity 1 " /></Entry><Entry name="DisplayString" value="3D " valueType="S"/></Dict></LiveEffect>
+    */
+    var zigzagEffect = '<LiveEffect name="Adobe Zigzag">' + '<Dict data="' +'R roundness 0.2' +'R amount 2' +'R ridges 5' +'R relAmount 0' +'R absoluteness 0.2' +'"/>' + '</LiveEffect>';
+    var deformEffect = '<LiveEffect name="Adobe Deform"><Dict data="R DeformValue 0.45 R DeformVert 0 B Rotate 0 I DeformStyle 1 R DeformHoriz 0 "/></LiveEffect>';
+    var fuzzyMastEffect = '<LiveEffect name="Adobe Fuzzy Mask"><Dict data="R Radius 3 " /></LiveEffect>';
+    var dropShadowEffect = '<LiveEffect name="Adobe Drop Shadow"><Dict data="R horz 7 I blnd 1 R opac 0.55 R dark 90 B pair 1 I csrc 0 R vert 7 R blur 10 B usePSLBlur 1 I Adobe Effect Expand Before Version 16 " /></LiveEffect>';
+
+    for ( var i = 10; i < obj.pageItems.length; i+=13) { 
+        obj.pageItems[i].applyEffect(zigzagEffect);
+        app.redraw();
+    }  
+  
     for ( var i = 0; i < obj.pageItems.length; i+=19) { 
-        obj.pageItems[i].applyEffect(efct);
+        obj.pageItems[i].applyEffect(deformEffect);
         app.redraw();
     }  
 
-    obj.applyEffect(efct);
+    obj.applyEffect(deformEffect);
+  //  obj.applyEffect(fuzzyMastEffect);
+    obj.applyEffect(dropShadowEffect);
 
     app.redraw();
     return "Effects";
@@ -245,13 +299,13 @@ function fileWriteTest(doc, progress) {
     progress("File write");
     app.redraw();
 
-    for( var i=0; i<2; i++){
+    for( var i=0; i<2; i++){//Not too many times - don't want to be accused of burning out anyone's storage device
         var dest = doc.path || $.HOMEPATH;
         var exportOptions = new ExportOptionsPNG24();
         exportOptions.antiAliasing = false;
         exportOptions.transparency = false;
         exportOptions.saveAsHTML = true;
-        exportOptions.horizontalScale = exportOptions.verticalScale = (i + 1) * 250;
+        exportOptions.horizontalScale = exportOptions.verticalScale = (i + 1) * 350;
 
         var type = ExportType.PNG24;
         var filePNG = new File();
@@ -295,11 +349,7 @@ function sumTests(tests) {
 //_____________________________________________
 
 function funcTimer(test) { //executes tests, returns time and score
-    var vars = {
-        name: "",
-        TIME: 0,
-        SCORE: 0
-    }
+    var vars = {};
 
     var start = new Date().getTime();
 
@@ -315,7 +365,7 @@ function funcTimer(test) { //executes tests, returns time and score
 //_____________________________________________
 
 function score(time) {
-    var scale = 5000000; //arbitary, but hopefully interesting for comparison
+    var scale = 5000000; //arbitary, but hopefully interesting as a scale for comparison
     if (time <= 1) {
         return false; //doh... 
     }
@@ -369,64 +419,51 @@ function getDoc(docName){
 //_____________________________________________
 
 function getCSVFile( fullPath ){
-    var tsvFile = File( fullPath );
-    // if(tsvFile.exists){
-    //     alert ("CSV exsits!")
-    //     return tsvFile;
-    // }
-    tsvFile.encoding = 'UTF8',
-    tsvFile.lineFeed = 'Windows'; //TODO for mac??
-    tsvFile.open('r',undefined,undefined);
-    return tsvFile;
+    var csvFile = File( fullPath );
+    csvFile.encoding = 'UTF8',
+    csvFile.lineFeed = 'Windows'; //TODO for mac??
+    csvFile.open('r',undefined,undefined);
+    return csvFile;
 }
 
 //_____________________________________________
 
-function getDataFromTsvContents( arr, delimiter ){//return some sort of data structure for past results
+function getDataFromCsvContents( arr, delimiter ){//return some sort of data structure for past results
     var contents = arr;
-   // alert( "arr: " + arr.toSource());
-    var separator = "~" ; 
-    //var results = [];// will hold the data 
-    var rows = contents.split('\n');
-    var keys = rows.shift().split(delimiter); // get the heads 
-    //alert("keys : " + keys);
-    /*    
-    get objects / make an index to link column headers to objects
-    var objs = getObjs( keys, separator );
-    results = addRowsToObjs(objs, rows);
-    */
-    // for(var i = 1; i < rows.length; i++){
-    //     //var tempObj = {}; // temp object
-    //     var cells = rows[i].split(delimiter);// get the cells
-    // }
 
-    var results = getResultsArr( keys, rows, delimiter );
+    var separator = "~" ; 
+
+    var rows = contents.split('\n');
+    var results = getResultsArr( rows, delimiter );
 
     return results; //results;
 }
 
 //_____________________________________________
 
-function getResultsArr( keys, rows, delimiter){
-    var results = [];
-   // alert("keys :" + keys)
+function getResultsArr( rows, delimiter){ //returns an object contain headers[key] and rows[row number][value]
+    var results = {};
+    results.headers = rows.shift().split(delimiter);
+    results.rows = [];
+
     for(var i = 0; i < rows.length; i++){
-        var row = {};
-        parts = rows[i].split(delimiter);
-        //alert( "parts : " + parts.toSource());
-        for( var j=0; j< parts.length; j++){
-            if( keys[j] && parts[j] ){
-                row[keys[j] + ""] = parts[j]; //String to preserve ordinality
-            }
-           // $.writeln( "Key : " + row[keys[j]].toSource()+ " , val : " + parts[j]);
-        }
-        results.push(row);
+        results.rows[i] = rows[i].split(delimiter);
     }
-   // alert(results);
+    popUndefinedOffArr(results.rows);
+       
     return results;
 }
-
 //_____________________________________________
+function popUndefinedOffArr(arr){
+    for(var i = arr.length; i > 0; i--){
+       if(arr[i]=="undefined"){
+           arr.pop();
+       }else{ //we found something? Ok, stop trimming
+           break;
+        }
+    }
+}
+
 
 function analyseResults(results) {
     //read from file - from the set of all past file runs
@@ -483,15 +520,16 @@ function objKeysToString(vari, delimiter, par){ //return a delimited string for 
     var separator = "~" ; 
     var str = "";
     var parents = par || "";
+   // alert(vari.toSource());
     for (var key in vari){
-        //if(key && vari[key] && key != "toJSON"){
+       if(key && vari[key] && key != "toJSON"){
             if( typeof vari[key] ==='object'){//it's a parent object 
                parents = (vari.name || "").substring(0, 4) +"~"+ key.substring(0, 4);
                str+=objKeysToString( vari[key], delimiter, parents);
             }else if(key != "name"){ //it's a column header
                 str += delimiter + parents + "~"+ key ;
             }
-       // }
+       }
     }
     return str;
 }
@@ -512,7 +550,11 @@ function objValsToString(vari, delimiter, st){
     return str.replace(/^','/m,"");
 }
 
-function recordResults(tsvFile, tests, testTotals, pastResults, info, delimiter) {
+function recordResults(csvFile, tests, testTotals, pastResults, info, delimiter) {
+    // alert(tests.toSource());
+    // alert(testTotals.toSource());
+    // alert(pastResults.toSource());
+    // alert(info.toSource());
     
     var headers =  "date" + //delimiter +
                 objKeysToString(tests,delimiter) + 
@@ -520,7 +562,7 @@ function recordResults(tsvFile, tests, testTotals, pastResults, info, delimiter)
                 objKeysToString(info,delimiter) + 
                 "\n";
                 
-    var row1 =  info.date + 
+    var row1 =  info.date.toString() + 
                 objValsToString(tests,delimiter) +
                 objValsToString(testTotals,delimiter) + 
                 objValsToString(info,delimiter) + 
@@ -529,27 +571,32 @@ function recordResults(tsvFile, tests, testTotals, pastResults, info, delimiter)
     //alert( pastResults.toSource() );
     var oldRows = getPastResultsStrings(pastResults, delimiter);
 
-    writeToCSV( headers + row1 + oldRows, tsvFile);
+    writeToCSV( headers + row1 + oldRows, csvFile);
 }
 
 
  //_____________________________________________
 
 function getPastResultsStrings( pastResults, delimiter){
-    var str;
-    for(var i = 0; i<pastResults.length;i++){
-        str += objValsToString( pastResults[i],delimiter) + "\n";
+    var str = "";
+    for(var i = 0; i<pastResults.rows.length;i++){
+        //alert(pastResults.rows[i].length);
+        for(var j = 0; j<pastResults.rows[i].length;j++){
+            //alert(pastResults.rows[i][j]);
+            str += pastResults.rows[i][j].toString()+ delimiter;
+        }
+        str+="\n";
     }
     return str || "";
 }
 
  //_____________________________________________
 
-function writeToCSV(txt, tsvFile){  
-    tsvFile.open( "w", "TEXT", $.getenv("USER"));  tsvFile.seek(0,2);   
-    $.os.search(/windows/i)  != -1 ? tsvFile.lineFeed = 'windows'  : tsvFile.lineFeed = 'macintosh';  
-    tsvFile.writeln(txt);  
-    tsvFile.close();  
+function writeToCSV(txt, csvFile){  
+    csvFile.open( "w", "TEXT", $.getenv("USER"));  csvFile.seek(0,2);   
+    $.os.search(/windows/i)  != -1 ? csvFile.lineFeed = 'windows'  : csvFile.lineFeed = 'macintosh';  
+    csvFile.writeln(txt);  
+    csvFile.close();  
 } 
 
 //_____________PROGRESS WINDOW UI
@@ -595,11 +642,11 @@ function progressWindow() {
 //_________________________________________
 //_________________________________________
 
-function infoIU(pastData, runcount, ver) { //What factors might be contributing to the benchmark times?
+function infoUI(pastData, runcount, ver) { //What factors might be contributing to the benchmark times?
     var date = new Date();
     var vars = {
         name:"info",
-        VERSION : ver,
+        BENCHMARK_VERSION : ver,
         date: date.toISOString(),
         Env_Info : {
             name: "environment_info",
@@ -1082,7 +1129,7 @@ function displayResults(tests, results, pastResults, info, runCount) {
     // BENCHRESULTSWIN
     // ===============
     var benchResultsWin = new Window("dialog"); 
-        benchResultsWin.text = "Benchmark Results"; 
+        benchResultsWin.text = "Benchmark Results (script version: " + info.VERSION + ")"; 
         benchResultsWin.orientation = "column"; 
         benchResultsWin.alignChildren = ["center","top"]; 
         benchResultsWin.spacing = 10; 
@@ -1556,6 +1603,7 @@ function displayResults(tests, results, pastResults, info, runCount) {
         closeButton.text = "Close"; 
         closeButton.onClick = function(){
             benchResultsWin.close();
+            
             return;
         }
 

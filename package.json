@@ -1,0 +1,20 @@
+{
+  "name": "Illustrator-Benchmark",
+  "version": "1.0.0",
+  "description": "A set of timed tests for comparing performance in Illustrator between different setups.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/VisualMeaning/Illustrator-Benchmark.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/VisualMeaning/Illustrator-Benchmark/issues"
+  },
+  "homepage": "https://github.com/VisualMeaning/Illustrator-Benchmark#readme"
+}
