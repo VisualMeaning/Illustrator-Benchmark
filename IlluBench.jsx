@@ -448,15 +448,17 @@ function getResultsArr( rows, delimiter){ //returns an object contain headers[ke
 
     for(var i = 0; i < rows.length; i++){
         results.rows[i] = rows[i].split(delimiter);
+   //     popUndefinedOffArr(results.rows[i]);
     }
-    popUndefinedOffArr(results.rows);
        
     return results;
 }
+
 //_____________________________________________
+
 function popUndefinedOffArr(arr){
     for(var i = arr.length; i > 0; i--){
-       if(arr[i]=="undefined"){
+       if( arr[i] == null) {
            arr.pop();
        }else{ //we found something? Ok, stop trimming
            break;
@@ -464,6 +466,7 @@ function popUndefinedOffArr(arr){
     }
 }
 
+//_____________________________________________
 
 function analyseResults(results) {
     //read from file - from the set of all past file runs
@@ -581,11 +584,13 @@ function getPastResultsStrings( pastResults, delimiter){
     var str = "";
     for(var i = 0; i<pastResults.rows.length;i++){
         //alert(pastResults.rows[i].length);
-        for(var j = 0; j<pastResults.rows[i].length;j++){
-            //alert(pastResults.rows[i][j]);
-            str += pastResults.rows[i][j].toString()+ delimiter;
+        if(!pastResults.rows[i][0]){ //hacky - but otherwise extra delimiters proliferate rows
+            continue;
         }
-        str+="\n";
+        for(var j = 0; j<pastResults.rows[i].length;j++){
+            str += pastResults.rows[i][j].toString()+ (j<pastResults.rows[i][j].length? delimiter : "");
+        }
+        str+= ( i<pastResults.rows[i].length? "\n" : "");
     }
     return str || "";
 }
