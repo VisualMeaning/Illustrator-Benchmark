@@ -448,7 +448,6 @@ function getResultsArr( rows, delimiter){ //returns an object contain headers[ke
 
     for(var i = 0; i < rows.length; i++){
         results.rows[i] = rows[i].split(delimiter);
-   //     popUndefinedOffArr(results.rows[i]);
     }
        
     return results;
@@ -458,7 +457,7 @@ function getResultsArr( rows, delimiter){ //returns an object contain headers[ke
 
 function popUndefinedOffArr(arr){
     for(var i = arr.length; i > 0; i--){
-       if( arr[i] == null) {
+       if( arr[i] == "undefined" ) {
            arr.pop();
        }else{ //we found something? Ok, stop trimming
            break;
@@ -550,7 +549,7 @@ function objValsToString(vari, delimiter, st){
             }
         }
     }
-    return str.replace(/^','/m,"");
+    return str;
 }
 
 function recordResults(csvFile, tests, testTotals, pastResults, info, delimiter) {
@@ -572,7 +571,7 @@ function recordResults(csvFile, tests, testTotals, pastResults, info, delimiter)
                 "\n"; //alert( "headers ::: " + headers + " ,___row1 :::: " + row1);
 
     //alert( pastResults.toSource() );
-    var oldRows = getPastResultsStrings(pastResults, delimiter);
+    var oldRows = getPastResultsStrings(pastResults, delimiter).replace(/,$/mg, "");
 
     writeToCSV( headers + row1 + oldRows, csvFile);
 }
@@ -588,11 +587,11 @@ function getPastResultsStrings( pastResults, delimiter){
             continue;
         }
         for(var j = 0; j<pastResults.rows[i].length;j++){
-            str += pastResults.rows[i][j].toString()+ (j<pastResults.rows[i][j].length? delimiter : "");
+            str += pastResults.rows[i][j].toString()+ delimiter;
         }
-        str+= ( i<pastResults.rows[i].length? "\n" : "");
+        str+="\n";//( i<pastResults.rows[i].length? "\n" : "");
     }
-    return str || "";
+    return str.replace(/,*$/m, "");
 }
 
  //_____________________________________________
@@ -1623,131 +1622,3 @@ function displayResults(tests, results, pastResults, info, runCount) {
 
     benchResultsWin.show();
 }
-
-
-
-
-// function getObjs( obj, arr){
-//     obj = obj || {};
-//     if( arr.length ){
-//         return {obj:""};
-//     }
-// }
-
-
-
-/*function getObjs( keys, separator ){
-/*
-date
-test~recta~time
-test~recta~score
-info~env_~
-
-data:xxxx,
-test:{
-    name:test,
-    recta:{
-        name:recta,
-        time,
-        score
-    }
-}
-
-Create an index of object references to assign to row values
-*//*
-
-    var objs ={};
-    for( var i = 0; i < keys.length; i++){
-       // var thisObj = {};
-        var parts = keys[i].split(separator);
-        var tempObj = objs[parts[i]];
-        
-        
-
-        var k = parts.length;
-        while(k){
-            var a = parts.unshift()
-        }
-        
-        
-        var tempObj = {}
-        while(parts.length){
-            
-        }
-
-        var parent, child;
-        
-        for( var j = 0; j < parts.length; j++){
-            child = parts.length-1;
-            parent = parts.length-2
-            
-            objs[parts[i]] = {};
-        }
-    } 
-    return objs;
-}*/
-
-
-
-// var buildParts(  parts,  a, b ){
-//     var obj = {}
-//     var l = parts.length;
-
-//     if(parts){
-//         return 
-//     }
-
-//     while(l){
-//         obj[parts.unshift] = {}
-//     }
-//     return obj;
-// }
-
-// function getObjs( keys ){
-//     var objs ={}
-//     for( var i = 0; i < keys.length; i++){
-//         var parts = keys[i].split(separator);
-//         for( var j = 0; j < parts.length; j++){
-//             for( var key in parts[j]){
-//                 objs[key] = parts[j];
-//             }
-//         }
-//     } 
-//     return objs;
-// }
-
-// function addRowsToObjs( objs, rows){
-//     //index from 1
-//     return results;
-// }
-
-
-               // assign them to the heads
-
-        // for(var j=0; j< keys.length;j++){
-        //     tempObj[keys[j]] = cells[j]; //TODO differentiate between results and info
-        // }
-
-        //alert(rows.toString());
-
-        // var resultsObj = {};
-        // for(var k in tempObj){
-        //     switch( k ){
-        //         case /^date/:
-        //             resultsObj["date"]=obj[k];
-        //             break;
-        //         case /^test/:
-        //             resultsObj["tests"][k]=obj[k];
-        //             break;
-        //         case /^env/:
-        //             resultsObj["env"][k]=obj[k];
-        //             break;
-        //         case /^info/:
-        //             resultsObj["info"][k]=obj[k];
-        //             break;
-        //         default:
-        //             $.writeln( $line + " - " + k + " : " + obj[k] + " fell through the switch statement");
-        //             break;
-        //     }
-        // }
-        // results.push(resultsObj); // add to data
