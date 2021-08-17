@@ -61,7 +61,7 @@ if (!Date.prototype.toISOString) {
 main();
 
 function main(runs) {
-    var VERSION = 0.61; //script version
+    var VERSION = "0.62.1"; //script version
     var delimiter = ',';//'\t'
     var runCount = runs || 0;
     var docName = "Illustrator Benchmark Doc.ai";
@@ -150,7 +150,7 @@ function rectanglesTest(obj, progress) {
     var rects = [];
     progress("Rectangles test");
 
-    for (var i = 0; i < 3; i++) {
+    for (var i = 0; i < 20; i++) {
         rects[i] = [];
         for (var j = 0; j < 40; j++) {
             rects[i][j] = doc.pathItems.rectangle(-4, 5, 5.5, 6.1);
@@ -161,7 +161,7 @@ function rectanglesTest(obj, progress) {
             rects[i][j].fillColor.blue = rects[i][j].strokeColor.green = 160 + (Math.round(Math.random() * 30));
         }
         app.redraw();
-        $.sleep(40);//just to down-weight the score for this test. It's less important than the others.
+        $.sleep(300);//just to down-weight the score for this test. There's not much going on here so it's less significant.
         for (var k = 0; k < 40; k++) {
             rects[i][k].fillColor.red = rects[i][k].strokeColor.blue = 25 + (Math.round(Math.random() * 50));
             rects[i][k].fillColor.green = rects[i][k].strokeColor.red = 95 + (Math.round(Math.random() * 60));
@@ -184,9 +184,16 @@ function transformationsTest(obj, progress) {
         //rotate
         obj.pageItems[i].rotate(i * 2.11);
         obj.pageItems[i].resize(111, 188);
-        //obj.pageItems[i].translate(0.03 * i, 0.05 * i);
+        obj.pageItems[i].translate(0.03 * i, 0.05 * i);
         //obj.pageItems[i].zOrder( ZOrderMethod.BRINGFORWARD ); //Is going to mutate the obj.pageItems order while we iterate through it? Not sure...
+        obj.pageItems[i].rotate(i * -5.789);
+        obj.pageItems[i].resize(93.254, 89.332);
+        obj.pageItems[i].resize(106.254, 148.8645);
+         obj.rotate(33.337);
+         obj.resize(100.0001,100.0001);
+         obj.rotate(68.837);
     }
+
     centreObj(obj);
     app.redraw();
     return "Transformations";
@@ -201,57 +208,13 @@ function effectsTest(obj, progress) {
     https://community.adobe.com/t5/illustrator/scripting-live-effects/m-p/11744702 
     https://github.com/mark1bean/ai-live-effect-functions/blob/master/README.md
 
-    投稿者: ten_a <-
+    Thanks 投稿者: ten_a
     https://translate.google.com/translate?sl=auto&tl=en&u=https://ten-artai.com/2015/12/318/
-        #Drop Shadow
-        <LiveEffect name="Adobe Drop Shadow"><Dict data="R horz 7 I blnd 1 R opac 0.75 R dark 100 B pair 1 I csrc 0 R vert 7 R blur 5 B usePSLBlur 1 I Adobe Effect Expand Before Version 16 " /></LiveEffect>
-
-        #Fuzzy Mask
-        <LiveEffect name="Adobe Fuzzy Mask"><Dict data="R Radius 5 " /></LiveEffect>
-
-        #Inner Grow
-        <LiveEffect index="0″ major="1″ minor="0″ name="Adobe Inner Glow"><Dict data="I gtyp 1 I blnd 2 R opac 0.75 R blur 5 “><Entry name="gclr" valueType="F"><Fill color="1 0 0 0 0″/></Entry></Dict></LiveEffect>
-
-        #Outer Grow
-        <LiveEffect name="Adobe Outer Glow"><Dict data="I Adobe Effect Expand Before Version 16 I blnd 2 R opac 0.75 R blur 5 B usePSLBlur 1 " /></LiveEffect>
-
-        #Scribble Fill
-        <LiveEffect name="Adobe Scribble Fill"><Dict data="R Spacing 5 R EdgeOverlap 0 R Scribbliness 0.05 R StrokeWidth 3 R Angle 30 R EdgeOverlapVariation 5 R SpacingVariation 0.5 R ScribbleVariation 0.01 " /></LiveEffect>
-
-        #Round Corners
-        <LiveEffect name="Adobe Round Corners"><Dict data="R radius 10 “/></LiveEffect>
-
-        #Outline Type
-        <LiveEffect index="0″ isPre="1″ major="1″ minor="0″ name="Adobe Outline Type"><Dict /></LiveEffect>
-
-        #Outline Stroke
-        <LiveEffect index="0″ major="1″ minor="0″ name="Adobe Outline Stroke"><Dict /></LiveEffect>
-
-        #Offset Path
-        <LiveEffect name="Adobe Offset Path"><Dict data="R mlim 4 R ofst 10 I jntp 2 " /></LiveEffect>
-
-        #Zigzag
-        <LiveEffect name="Adobe Zigzag"><Dict data="R roundness 0 R absoluteness 1 R relAmount 10 R ridges 4 R amount 10.006 " /></LiveEffect>
-
-        #Free Disort
-        <LiveEffect name="Adobe Free Distort"><Dict data="R src3h 278 R src2h 178 R dst2v -263 R src2v -263 R src0h 178 R dst2h 178 R src3v -263 R dst3v -263 R dst0v -163 R src1h 278 R src1v -163 R src0v -163 R dst0h 178 R dst1v -163 R dst1h 278 R dst3h 278 " /></LiveEffect>
-
-        #Punck & Bloat
-        <LiveEffect name="Adobe Punk and Bloat"><Dict data="R d_factor 10 " /></LiveEffect>
-
-        #Twirl
-        <LiveEffect name="Adobe Twirl"><Dict data="R angle 30 " /></LiveEffect>
-
-        #Pathfinder
-        <LiveEffect name="Adobe Pathfinder"><Dict data="R TrapTintTolerance 0.05 B ExtractUnpainted 1 B TrapConvertCustom 0 R TrapAspect 1 B ConvertCustom 1 R TrapMaxTint 1 R Mix 0.5 B RemovePoints 0 I Command 0 R TrapThickness 0.25 R TrapTint 0.4 B TrapReverse 0 R Precision 10 “><Entry name="DisplayString" value="" valueType="S" /></Dict><LiveEffect>
-
-        #3D Effect
-        <LiveEffect name="Adobe 3D Effect"><Dict data="B showHiddenSurfaces 0 R cameraPerspective 0 I rotationPresetKey 9 B paramsDictionaryInitialized 1 I 3Dversion 2 B extrudeCap 1 R mat_12 -0.278 R mat_13 0 R mat_20 -0.456 R mat_21 0.248 R mat_22 0.855 R mat_23 0 R mat_30 0 R mat_31 0 R mat_32 0 R mat_33 1 R rotX -18 R rotY -26 R rotZ 8 R revolveAngle 360 B revolveCap 1 R revolveOffset 0 I revolveAxisMode 0 I surfaceStyle 3 R surfaceAmbient 50 R surfaceMatte 40 R surfaceGloss 10 R blendSteps 25 B invisibleGeo 0 I shadeMode 3 B preserveSpots 0 I numLights 1 B shadeMaps 0 I numArtMaps 0 R mat_11 0.961 R mat_10 0.002 R mat_03 0 R mat_02 0.438 R mat_01 0.125 R mat_00 0.89 I effectStyle 0 R bevelHeight 4 B bevelExtentIn 1 R extrudeDepth 50 “><Entry name="shadeColor" valueType="F"><Fill color="1 0 1 1 0″/></Entry><Entry name="light0″ valueType="D"><Dict data="R lightDirX 0.39 R lightDirY 0.33 R lightDirZ -0.85 R lightPosX 0 R lightPosY 0 R lightPosZ -1 R lightIntensity 1 " /></Entry><Entry name="DisplayString" value="3D " valueType="S"/></Dict></LiveEffect>
-    */
+   */
     var zigzagEffect = '<LiveEffect name="Adobe Zigzag">' + '<Dict data="' +'R roundness 0.2' +'R amount 2' +'R ridges 5' +'R relAmount 0' +'R absoluteness 0.2' +'"/>' + '</LiveEffect>';
     var deformEffect = '<LiveEffect name="Adobe Deform"><Dict data="R DeformValue 0.45 R DeformVert 0 B Rotate 0 I DeformStyle 1 R DeformHoriz 0 "/></LiveEffect>';
     var fuzzyMastEffect = '<LiveEffect name="Adobe Fuzzy Mask"><Dict data="R Radius 3 " /></LiveEffect>';
-    var dropShadowEffect = '<LiveEffect name="Adobe Drop Shadow"><Dict data="R horz 7 I blnd 1 R opac 0.55 R dark 90 B pair 1 I csrc 0 R vert 7 R blur 10 B usePSLBlur 1 I Adobe Effect Expand Before Version 16 " /></LiveEffect>';
+    var dropShadowEffect = '<LiveEffect name="Adobe Drop Shadow"><Dict data="R horz 7 I blnd 1 R opac 0.35 R dark 70 B pair 1 I csrc 0 R vert 7 R blur 15 B usePSLBlur 1 I Adobe Effect Expand Before Version 16 " /></LiveEffect>';
 
     for ( var i = 10; i < obj.pageItems.length; i+=13) { 
         obj.pageItems[i].applyEffect(zigzagEffect);
@@ -662,29 +625,30 @@ function infoUI(pastData, runcount, ver) { //What factors might be contributing 
         },
         Usr_Inpt :{
             name: "user_input_variables",
-            otherDocs: null,
-            otherApps: null,
-            optimisationApp: null,
-            CPU_Model:null,
-            CPU_Mhz:null,
-            RAM_GB:null,
-            RAM_Mhz:null,
-            GPU:null,
-            HDD:null
+            otherDocs: "",
+            otherApps: "",
+            optimisationApp: "",
+            CPU_Model:"",
+            CPU_Mhz:"",
+            RAM_GB:"",
+            RAM_Mhz:"",
+            GPU:"",
+            HDD:"",
+            note: ""
         }
     };
 
     //https://scriptui.joonas.me <- praise
-    var dialog = new Window("dialog");
-    dialog.text = "Illustrator Benchmark ";
-    dialog.orientation = "row";
-    dialog.alignChildren = ["center", "top"];
-    dialog.spacing = 10;
-    dialog.margins = 16;
+    var infoUIwin = new Window("dialog");
+    infoUIwin.text = "AIBench :: v." + vars.BENCHMARK_VERSION;
+    infoUIwin.orientation = "row";
+    infoUIwin.alignChildren = ["center", "top"];
+    infoUIwin.spacing = 10;
+    infoUIwin.margins = 16;
 
     // GROUP1
     // ======
-    var group1 = dialog.add("group", undefined, {
+    var group1 = infoUIwin.add("group", undefined, {
         name: "group1"
     });
     group1.orientation = "column";
@@ -706,7 +670,7 @@ function infoUI(pastData, runcount, ver) { //What factors might be contributing 
     var statictext1 = group2.add("statictext", undefined, undefined, {
         name: "statictext1"
     });
-    statictext1.text = "Date: ";
+    statictext1.text = "Date: " + vars.date;
     statictext1.justify = "right";
 
     // GROUP3
@@ -720,10 +684,12 @@ function infoUI(pastData, runcount, ver) { //What factors might be contributing 
     group3.spacing = 10;
     group3.margins = 2;
 
-    var button1 = group2.add("button", undefined, undefined, {
-        name: "button1"
+    var infoButton = group2.add("button", undefined, undefined, {
+        name: "infoButton"
     });
-    button1.text = "Info";
+    infoButton.text = "Info";
+    infoButton.enabled=false;
+
 
     // PANEL1
     // ======
@@ -756,10 +722,17 @@ function infoUI(pastData, runcount, ver) { //What factors might be contributing 
     group5.spacing = 10;
     group5.margins = 0;
 
-    var checkbox1 = group5.add("checkbox", undefined, undefined, {
-        name: "checkbox1"
+
+    //////////////
+
+    var otherDocsCheckbox = group5.add("checkbox", undefined, undefined, {
+        name: "otherDocsCheckbox"
     });
-    checkbox1.text = "Are other files currently open in Illustrator?";
+    otherDocsCheckbox.text = "Are other files currently open in Illustrator?";
+    otherDocsCheckbox.value = vars.Usr_Inpt.otherDocs;
+    otherDocsCheckbox.onClick = function(){
+        vars.Usr_Inpt.otherDocs = otherDocsCheckbox.value;
+    }
 
     // GROUP6
     // ======
@@ -771,10 +744,14 @@ function infoUI(pastData, runcount, ver) { //What factors might be contributing 
     group6.spacing = 10;
     group6.margins = 0;
 
-    var checkbox2 = group6.add("checkbox", undefined, undefined, {
-        name: "checkbox2"
+    var otherAppsCheckbox = group6.add("checkbox", undefined, undefined, {
+        name: "otherAppsCheckbox"
     });
-    checkbox2.text = "Have you bothered closing all other apps?";
+    otherAppsCheckbox.text = "Have you bothered closing all other apps?";
+    otherAppsCheckbox.value = vars.Usr_Inpt.otherApps;
+    otherAppsCheckbox.onClick = function(){
+        vars.Usr_Inpt.otherApps = otherAppsCheckbox.value;
+    }
 
     // GROUP7
     // ======
@@ -786,11 +763,15 @@ function infoUI(pastData, runcount, ver) { //What factors might be contributing 
     group7.spacing = 10;
     group7.margins = 0;
 
-    var checkbox3 = group7.add("checkbox", undefined, undefined, {
-        name: "checkbox3"
+    var processOptCheckbox = group7.add("checkbox", undefined, undefined, {
+        name: "processOptCheckbox"
     });
-    checkbox3.helpTip = "eg. Process Lasso, CPUCores etc.";
-    checkbox3.text = "Is there a process optimisation app running?";
+    processOptCheckbox.helpTip = "eg. Process Lasso, CPUCores etc.";
+    processOptCheckbox.text = "Is there a process optimisation app running?";
+    processOptCheckbox.value = vars.Usr_Inpt.otherApps;
+    processOptCheckbox.onClick = function(){
+        vars.Usr_Inpt.optimisationApp = processOptCheckbox.value;
+    }
 
     // GROUP4
     // ======
@@ -809,15 +790,15 @@ function infoUI(pastData, runcount, ver) { //What factors might be contributing 
     group8.spacing = 10;
     group8.margins = 0;
 
-    var statictext2 = group8.add("statictext", undefined, undefined, {
-        name: "statictext2"
+    var illuVersionStatic = group8.add("statictext", undefined, undefined, {
+        name: "illuVersionStatic"
     });
-    statictext2.text = "Illustrator version:";
+    illuVersionStatic.text = "Illustrator version: " ;
 
     var statictext3 = group8.add("statictext", undefined, undefined, {
         name: "statictext3"
     });
-    statictext3.text = "\u0022\u0022";
+    statictext3.text = vars.Env_Info.illuVersion;
 
     // GROUP9
     // ======
@@ -832,12 +813,12 @@ function infoUI(pastData, runcount, ver) { //What factors might be contributing 
     var statictext4 = group9.add("statictext", undefined, undefined, {
         name: "statictext4"
     });
-    statictext4.text = "Operating system:";
+    statictext4.text = "Operating system: ";
 
     var statictext5 = group9.add("statictext", undefined, undefined, {
         name: "statictext5"
     });
-    statictext5.text = "\u0022\u0022";
+    statictext5.text = vars.Env_Info.os;
 
     // GROUP10
     // =======
@@ -857,7 +838,7 @@ function infoUI(pastData, runcount, ver) { //What factors might be contributing 
     var statictext7 = group10.add("statictext", undefined, undefined, {
         name: "statictext7"
     });
-    statictext7.text = "\u0022\u0022";
+    statictext7.text = vars.Env_Info.screens;
 
     // GROUP11
     // =======
@@ -872,12 +853,12 @@ function infoUI(pastData, runcount, ver) { //What factors might be contributing 
     var statictext8 = group11.add("statictext", undefined, undefined, {
         name: "statictext8"
     });
-    statictext8.text = "Processor Identifier:";
+    statictext8.text = "Processor Identifier: ";
 
     var statictext9 = group11.add("statictext", undefined, undefined, {
         name: "statictext9"
     });
-    statictext9.text = "\u0022\u0022";
+    statictext9.text = vars.Env_Info.cpu;
 
     // GROUP12
     // =======
@@ -892,12 +873,12 @@ function infoUI(pastData, runcount, ver) { //What factors might be contributing 
     var statictext10 = group12.add("statictext", undefined, undefined, {
         name: "statictext10"
     });
-    statictext10.text = "Number of Processors:";
+    statictext10.text = "Number of Processors: ";
 
     var statictext11 = group12.add("statictext", undefined, undefined, {
         name: "statictext11"
     });
-    statictext11.text = "\u0022\u0022";
+    statictext11.text = vars.Env_Info.threads;
 
     // GROUP4
     // ======
@@ -906,10 +887,14 @@ function infoUI(pastData, runcount, ver) { //What factors might be contributing 
     });
     divider2.alignment = "fill";
 
-    var edittext1 = group4.add('edittext {properties: {name: "edittext1", multiline: true, scrollable: true}}');
-    edittext1.text = "Note";
-    edittext1.preferredSize.height = 79;
-    edittext1.alignment = ["fill", "center"];
+    var noteEdit = group4.add('edittext {properties: {name: "edittext1", multiline: true, scrollable: true}}');
+    noteEdit.text = "Note";
+    noteEdit.preferredSize.height = 79;
+    noteEdit.alignment = ["fill", "center"];
+    noteEdit.onChange = function(){
+        vars.Usr_Inpt.note = noteEdit.text;
+    }
+
 
     var divider3 = panel1.add("panel", undefined, undefined, {
         name: "divider3"
@@ -918,68 +903,70 @@ function infoUI(pastData, runcount, ver) { //What factors might be contributing 
 
     // GROUP13
     // =======
-    var group13 = panel1.add("group", undefined, {
-        name: "group13"
+    var hardwareGroup = panel1.add("group", undefined, {
+        name: "hardwareGroup"
     });
-    group13.orientation = "column";
-    group13.alignChildren = ["fill", "center"];
-    group13.spacing = 10;
-    group13.margins = 0;
+    hardwareGroup.orientation = "column";
+    hardwareGroup.alignChildren = ["fill", "center"];
+    hardwareGroup.spacing = 10;
+    hardwareGroup.margins = 0;
 
-    var statictext12 = group13.add("statictext", undefined, undefined, {
-        name: "statictext12"
+    var hardwareStatic = hardwareGroup.add("statictext", undefined, undefined, {
+        name: "hardwareStatic"
     });
-    statictext12.helpTip = "This might be interested if you're overclocking or changing hardware";
-    statictext12.text = "Hardware";
-    statictext12.preferredSize.width = 250;
-    statictext12.justify = "center";
-    statictext12.alignment = ["center", "center"];
+    hardwareStatic.helpTip = "This might be interested if you're overclocking or changing hardware";
+    hardwareStatic.text = "Hardware";
+    hardwareStatic.preferredSize.width = 250;
+    hardwareStatic.justify = "center";
+    hardwareStatic.alignment = ["center", "center"];
 
     // GROUP14
     // =======
-    var group14 = group13.add("group", undefined, {
-        name: "group14"
+    var cpuNameGroup = hardwareGroup.add("group", undefined, {
+        name: "cpuNameGrou"
     });
-    group14.orientation = "row";
-    group14.alignChildren = ["left", "center"];
-    group14.spacing = 10;
-    group14.margins = 0;
-    group14.alignment = ["left", "center"];
+    cpuNameGroup.orientation = "column";
+    cpuNameGroup.alignChildren = ["fill", "top"];
+    cpuNameGroup.spacing = 10;
 
-    var statictext13 = group14.add("statictext", undefined, undefined, {
-        name: "statictext13"
+
+    var cpuNameStatic = cpuNameGroup.add("statictext", undefined, undefined, {
+        name: "cpuNameStatic"
     });
-    statictext13.helpTip = "eg. 8600k";
-    statictext13.text = "CPU name";
+    cpuNameStatic.helpTip = "eg. 8600k";
+    cpuNameStatic.text = "CPU name:";
+    cpuNameStatic.onChange = function(){
+        vars.Usr_Inpt.CPU_Model = cpuNameStatic.text;
+    }
 
-    var edittext2 = group14.add('edittext {properties: {name: "edittext2"}}');
-    edittext2.alignment = ["left", "fill"];
+    var cpuNameEdit = cpuNameGroup.add('edittext {properties: {name: "cpuNameEdit"}}');
+   // cpuNameEdit.preferredSize.width = 100;
 
+//////////////////////////////////////////////////////<<<<<<<<<<<<<<<<<<< TODO from here on
     // GROUP15
     // =======
-    var group15 = group13.add("group", undefined, {
+    var group15 = hardwareGroup.add("group", undefined, {
         name: "group15"
     });
-    group15.orientation = "row";
-    group15.alignChildren = ["left", "center"];
+    group15.orientation = "column";
+    group15.alignChildren = ["fill", "top"];
     group15.spacing = 10;
-    group15.margins = 0;
 
     var statictext14 = group15.add("statictext", undefined, undefined, {
         name: "statictext14"
     });
-    statictext14.helpTip = "eg.  4800";
-    statictext14.text = "CPU Mhz";
+    statictext14.helpTip = "eg. 4800";
+    statictext14.text = "CPU Mhz:";
 
     var edittext3 = group15.add('edittext {properties: {name: "edittext3"}}');
 
     // GROUP16
     // =======
-    var group16 = group13.add("group", undefined, {
+    var group16 = hardwareGroup.add("group", undefined, {
         name: "group16"
     });
-    group16.orientation = "row";
-    group16.alignChildren = ["left", "center"];
+    group16.orientation = "column";
+    group16.alignChildren = ["fill", "top"];
     group16.spacing = 10;
     group16.margins = 0;
 
@@ -987,137 +974,143 @@ function infoUI(pastData, runcount, ver) { //What factors might be contributing 
         name: "statictext15"
     });
     statictext15.helpTip = "eg. 16";
-    statictext15.text = "RAM GB";
+    statictext15.text = "RAM GB:";
 
     var edittext4 = group16.add('edittext {properties: {name: "edittext4"}}');
 
     // GROUP17
     // =======
-    var group17 = group13.add("group", undefined, {
+    var group17 = hardwareGroup.add("group", undefined, {
         name: "group17"
     });
-    group17.orientation = "row";
-    group17.alignChildren = ["left", "center"];
+    group17.orientation = "column";
+    group17.alignChildren = ["fill", "top"];
     group17.spacing = 10;
-    group17.margins = 0;
 
     var statictext16 = group17.add("statictext", undefined, undefined, {
         name: "statictext16"
     });
     statictext16.helpTip = "eg. 2133";
-    statictext16.text = "RAM Mhz";
+    statictext16.text = "RAM Mhz:";
 
     var edittext5 = group17.add('edittext {properties: {name: "edittext5"}}');
 
     // GROUP18
     // =======
-    var group18 = group13.add("group", undefined, {
+    var group18 = hardwareGroup.add("group", undefined, {
         name: "group18"
     });
-    group18.orientation = "row";
-    group18.alignChildren = ["left", "center"];
+    group18.orientation = "column";
+    group18.alignChildren = ["fill", "top"];
     group18.spacing = 10;
-    group18.margins = 0;
 
     var statictext17 = group18.add("statictext", undefined, undefined, {
         name: "statictext17"
     });
     statictext17.helpTip = "eg. GTX 1070 ti";
-    statictext17.text = "GPU name";
+    statictext17.text = "GPU name:";
 
     var edittext6 = group18.add('edittext {properties: {name: "edittext6"}}');
 
     // GROUP19
     // =======
-    var group19 = group13.add("group", undefined, {
-        name: "group19"
+    var gpuGroup = hardwareGroup.add("group", undefined, {
+        name: "gpuGroup"
     });
-    group19.orientation = "row";
-    group19.alignChildren = ["left", "center"];
-    group19.spacing = 10;
-    group19.margins = 0;
+    gpuGroup.orientation = "column";
+    gpuGroup.alignChildren = ["fill", "top"];
+    gpuGroup.spacing = 10;
+    gpuGroup.margins = 0;
 
-    var statictext18 = group19.add("statictext", undefined, undefined, {
-        name: "statictext18"
+    var gpuMhzStatic = gpuGroup.add("statictext", undefined, undefined, {
+        name: "gpuMhzStatic"
     });
-    statictext18.helpTip = "eg. 1683";
-    statictext18.text = "GPU Mhz";
+    gpuMhzStatic.helpTip = "eg. 1683";
+    gpuMhzStatic.text = "GPU Mhz:";
 
-    var edittext7 = group19.add('edittext {properties: {name: "edittext7"}}');
+    var gpuMhzEdit = gpuGroup.add('edittext {properties: {name: "gpuMhzEdit"}}');
 
     // GROUP20
     // =======
-    var group20 = group13.add("group", undefined, {
-        name: "group20"
+    var ramGroup = hardwareGroup.add("group", undefined, {
+        name: "ramGroup"
     });
-    group20.orientation = "row";
-    group20.alignChildren = ["left", "center"];
-    group20.spacing = 10;
-    group20.margins = 0;
+    ramGroup.orientation = "column";
+    ramGroup.alignChildren = ["fill", "top"];
+    ramGroup.spacing = 10;
+    ramGroup.margins = 0;
 
-    var statictext19 = group20.add("statictext", undefined, undefined, {
-        name: "statictext19"
+    var ramStatic = ramGroup.add("statictext", undefined, undefined, {
+        name: "ramStatic"
     });
-    statictext19.helpTip = "eg. 8";
-    statictext19.text = "GPU RAM GB";
+    ramStatic.helpTip = "eg. 8";
+    ramStatic.text = "GPU RAM GB:";
 
-    var edittext8 = group20.add('edittext {properties: {name: "edittext8"}}');
+    var ramEdit = ramGroup.add('edittext {properties: {name: "ramEdit"}}');
 
     // GROUP21
     // =======
-    var group21 = group13.add("group", undefined, {
-        name: "group21"
+    var storageGroup = hardwareGroup.add("group", undefined, {
+        name: "storageGroup"
     });
-    group21.orientation = "column";
-    group21.alignChildren = ["left", "center"];
-    group21.spacing = 10;
-    group21.margins = 0;
+    storageGroup.orientation = "column";
+    storageGroup.alignChildren = ["left", "center"];
+    storageGroup.spacing = 10;
+    storageGroup.margins = 0;
 
-    var statictext20 = group21.add("statictext", undefined, undefined, {
-        name: "statictext20"
+    var storageText = storageGroup.add("statictext", undefined, undefined, {
+        name: "storageText"
     });
-    statictext20.helpTip = "eg. 8";
-    statictext20.text = "Storage";
+    storageText.helpTip = "eg. 8";
+    storageText.text = "Storage";
 
-    var radiobutton1 = group21.add("radiobutton", undefined, undefined, {
-        name: "radiobutton1"
+    var hdRadio = storageGroup.add("radiobutton", undefined, undefined, {
+        name: "hdRadio"
     });
-    radiobutton1.text = "HD";
+    hdRadio.text = "HD";
 
-    var radiobutton2 = group21.add("radiobutton", undefined, undefined, {
-        name: "radiobutton2"
+    var ssdRadio = storageGroup.add("radiobutton", undefined, undefined, {
+        name: "ssdRadio"
     });
-    radiobutton2.text = "SSD";
+    ssdRadio.text = "SSD";
 
-    var radiobutton3 = group21.add("radiobutton", undefined, undefined, {
-        name: "radiobutton3"
+    var nvmeRadio = storageGroup.add("radiobutton", undefined, undefined, {
+        name: "nvmeRadio"
     });
-    radiobutton3.text = "NVMe";
+    nvmeRadio.text = "NVMe";
 
     // GROUP22
     // =======
-    var group22 = group1.add("group", undefined, {
-        name: "group22"
+    var buttonGroup = group1.add("group", undefined, {
+        name: "buttonGroup"
     });
-    group22.orientation = "row";
-    group22.alignChildren = ["left", "center"];
-    group22.spacing = 10;
-    group22.margins = 0;
-    group22.alignment = ["fill", "center"];
+    buttonGroup.orientation = "row";
+    buttonGroup.alignChildren = ["left", "center"];
+    buttonGroup.spacing = 10;
+    buttonGroup.margins = 0;
+    buttonGroup.alignment = ["fill", "center"];
 
-    var button2 = group22.add("button", undefined, undefined, {
-        name: "button2"
+    var goAheadAndRunThisThing = true;
+
+    var benchmarkButton = buttonGroup.add("button", undefined, undefined, {
+        name: "benchmarkButton"
     });
-    button2.text = "Benchmark";
+    benchmarkButton.text = "Run benchmark";
+    benchmarkButton.onClick = function(){
+        infoUIwin.close();
+    }
 
-    var button3 = group22.add("button", undefined, undefined, {
-        name: "button3"
+    var cancelButton = buttonGroup.add("button", undefined, undefined, {
+        name: "cancelButton"
     });
-    button3.text = "Cancel";
+    cancelButton.text = "Cancel";
+    cancelButton.onClick = function(){
+        goAheadAndRunThisThing = false;
+        infoUIwin.close();
+    }
 
-    //dialog.show();
-
-    return vars; // {all the things}
+    infoUIwin.show();
+    return goAheadAndRunThisThing ? vars : false; 
 }
 
 //_____________DISPLAY RESULTS UI
@@ -1393,8 +1386,8 @@ function displayResults(tests, results, pastResults, info, runCount) {
 
     var avEffTimeText = avgEffPanel.add("statictext", undefined, undefined, {name: "avEffTimeText"}); 
 
-    var statictext18 = avgEffPanel.add("statictext", undefined, undefined, {name: "statictext18"}); 
-        statictext18.text = "Score:"; 
+    var avgEffStatic = avgEffPanel.add("statictext", undefined, undefined, {name: "avgEffStatic"}); 
+        avgEffStatic.text = "Score:"; 
 
     var avEffScoreText = avgEffPanel.add("statictext", undefined, undefined, {name: "avEffScoreText"}); 
 
