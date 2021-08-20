@@ -16,81 +16,38 @@
             ^ multiple less complex operations per test, averaging results (how many?)
 
     TODO: 
-        Design results display
-        Design data file
-            storing info - (per run? or global? or both?)
-            storing results
-        reading data file back in
-            analytics
+        InfoUI: pre-fill user input data from file (if present)
+        analytics
 */
 
 // @target illustrator
 
-if (!Date.prototype.toISOString) {
-    (function() {
-        function pad(number) {
-            if (number < 10) {
-                return "0" + number;
-            }
-            return number;
-        }
-
-        Date.prototype.toISOString = function() {
-            return (
-                this.getUTCFullYear() + //YYYY-MM-DD HH:MM:SS:MM
-                "-" +
-                pad(this.getUTCMonth() + 1) +
-                "-" +
-                pad(this.getUTCDate()) +
-                " " +
-                pad(this.getUTCHours()) +
-                ":" +
-                pad(this.getUTCMinutes()) +
-                ":" +
-                pad(this.getUTCSeconds())
-                //  +
-                // "." +
-                // (this.getUTCMilliseconds() / 1000).toFixed(3).slice(2, 5)
-            );
-        };
-    })();
-}
-
-//_______ Main
+isoDatePrototype();
 
 main();
 
+//_______ Main
+
 function main(runs) {
-    var VERSION = "0.62.1"; //script version
+    var VERSION = "0.63.0"; //script version
     var delimiter = ',';//'\t'
     var runCount = runs || 0;
     var docName = "Illustrator Benchmark Doc.ai";
+
     var doc = getDoc(docName); //try and get a saved doc (with a path), or an unsaved one if prefered. 
 
     var csvFilename = "Illustrator Benchmark Data.csv";
     var csvFile = getCSVFile( doc.path + "/" + csvFilename );
-  //  alert( csvFile.read());
 
-    // var csvFile = doc.path ?
-    //     getCSVFile(doc.path + "/" + csvFilename) :
-    //     false; //if there's an appropriately named csv file already in this location, get the contents 
-   // alert( csvFile.toString());
-  // alert("CSV: " + csvFile.read());
     var pastData = csvFile ? 
-        getDataFromCsvContents(csvFile.read(), delimiter) : //currently returns a flat object  
+        getDataFromCsvContents(csvFile.read(), delimiter) : 
         false;
-  //  alert( pastData.toString());
-
-    //var pastResults = analyseResults(); //average, mean, time delta, highest on record for individual tests and totals
-
-    var info = infoUI(pastData,runCount, VERSION); //factors that might affect the results - to append to the results for this run
+  
+    var info = infoUI(pastData,runCount, VERSION, pastData ); //factors that might affect the results - to append to the results for this run
 
     if (!info) {
        return
     }
-
-    //app.executeMenuCommand('doc-color-rgb'); //TODO might be interesting to compare results in CYMK!
-    //doc.documentColorSpace = DocumentColorSpace.RGB;
 
     doc.pageItems.removeAll();
 
@@ -125,7 +82,6 @@ function main(runs) {
     // Tell us what happened
 
     var testTotals = sumTests(tests); //total time and score for this test
-    //alert( $.line + " - testTotals -> " + testTotals.toSource());
 
     if(csvFile){
         recordResults(csvFile, tests, testTotals, pastData, info, delimiter); //write time/score & info to illuBench record.txt file
@@ -432,51 +388,39 @@ function popUndefinedOffArr(arr){
 
 function analyseResults(results) {
     //read from file - from the set of all past file runs
+    var totals = getSubArr( results, "totals");
+    var transformations = getSubArr( results, "transformations");
+    var effects = getSubArr( results, "effects");
+    var zoom = getSubArr( results,"zoom");
+    var fileWrite = getSubArr( results,"fileWrite");
+
     var vars = {
-        totals: {
-            average: 0,
-            mean: 0,
-            timeDelta: 0,
-            recordTime: 0,
-            recordScore: 0
-        },
-        rectangles: {
-            average: 0,
-            mean: 0,
-            timeDelta: 0,
-            recordTime: 0,
-            recordScore: 0
-        },
-        transformations: {
-            average: 0,
-            mean: 0,
-            timeDelta: 0,
-            recordTime: 0,
-            recordScore: 0
-        },
-        effects: {
-            average: 0,
-            mean: 0,
-            timeDelta: 0,
-            recordTime: 0,
-            recordScore: 0
-        },
-        zoom: {
-            average: 0,
-            mean: 0,
-            timeDelta: 0,
-            recordTime: 0,
-            recordScore: 0
-        },
-        fileWrite: {
-            average: 0,
-            mean: 0,
-            timeDelta: 0,
-            recordTime: 0,
-            recordScore: 0
-        }
+        totals: analysis(totals),
+        transformations: analysis(transformations),
+        effects: analysis(effects),
+        zoom: analysis(zoom),
+        fileWrite: analysis(fileWrite)
     }
     return vars; //average, mean, time delta, highest on record for individual tests and totals
+}
+
+//_____________________________________________
+
+function getSubArr( arr, str ){
+//match str within subar. Or maybe an obj?
+}
+
+//_____________________________________________
+
+function analysis( set ){
+    /// calculations
+    return {
+            average: 0,
+            mean: 0,
+            timeDelta: 0,
+            recordTime: 0,
+            recordScore: 0
+    }
 }
 
 //_____________________________________________
@@ -515,19 +459,16 @@ function objValsToString(vari, delimiter, st){
     return str;
 }
 
-function recordResults(csvFile, tests, testTotals, pastResults, info, delimiter) {
-    // alert(tests.toSource());
-    // alert(testTotals.toSource());
-    // alert(pastResults.toSource());
-    // alert(info.toSource());
-    
-    var headers =  "date" + //delimiter +
+//_____________________________________________
+
+function recordResults(csvFile, tests, testTotals, pastResults, info, delimiter) {  
+    var headers =  //"Date" + //delimiter +
                 objKeysToString(tests,delimiter) + 
                 objKeysToString({"totals" : testTotals},delimiter) + 
                 objKeysToString(info,delimiter) + 
                 "\n";
                 
-    var row1 =  info.date.toString() + 
+    var row1 =  //info.Date.toString() + 
                 objValsToString(tests,delimiter) +
                 objValsToString(testTotals,delimiter) + 
                 objValsToString(info,delimiter) + 
@@ -538,7 +479,6 @@ function recordResults(csvFile, tests, testTotals, pastResults, info, delimiter)
 
     writeToCSV( headers + row1 + oldRows, csvFile);
 }
-
 
  //_____________________________________________
 
@@ -566,6 +506,29 @@ function writeToCSV(txt, csvFile){
     csvFile.close();  
 } 
 
+//_____________________________________________
+
+function getPastUserInput( pastData, vari ){ //returns data item for vari
+    if(!pastData){
+        return false;
+    }
+
+    var firstRow = pastData.rows[0];
+    for(var i=0; i< pastData.headers.length;i++ ){ 
+        var regEx = '/^' + vari + '/';
+        if( pastData.headers[i].match( regEx )){
+            return firstRow[i];//firstRow.slice( firstRow.length -i );
+        }
+    }
+
+    return false;
+    // var firstRow = pataData.rows[0];
+    // for(var i=0; i< pastData.headers.length;i++ ){ 
+    //     if( pastData.headers[i].test( /^info~Usr_/ )){
+    //         return firstRow.slice( firstRow.length -i );
+    //     }
+    // }
+}
 //_____________PROGRESS WINDOW UI
 //_________________________________________
 //_________________________________________
@@ -609,32 +572,35 @@ function progressWindow() {
 //_________________________________________
 //_________________________________________
 
-function infoUI(pastData, runcount, ver) { //What factors might be contributing to the benchmark times?
+function infoUI(pastData, runcount, ver, pastData) { //What factors might be contributing to the benchmark times?
     var date = new Date();
+  //  oldInput = getPastUserInput(pastData);
     var vars = {
         name:"info",
-        BENCHMARK_VERSION : ver,
-        date: date.toISOString(),
+        Benchmark_Version : ver,
+        Date: date.toISOString(),
         Env_Info : {
             name: "environment_info",
-            illuVersion: app.version,
-            os: $.os,
-            screens: $.screens.length, //number of displays? TODO - calculate resolutions (left,top,right,bottom)
-            cpu: $.getenv("PROCESSOR_IDENTIFIER"),
-            threads: $.getenv("NUMBER_OF_PROCESSORS")
+            Illustrator_Version: app.version,
+            OS: $.os.replace(/,/g,'-'),
+            Screens: $.screens.length,
+            CPU: $.getenv("PROCESSOR_IDENTIFIER").replace(/,/g,'-'),
+            Threads: $.getenv("NUMBER_OF_PROCESSORS")
         },
         Usr_Inpt :{
             name: "user_input_variables",
-            otherDocs: "",
-            otherApps: "",
-            optimisationApp: "",
-            CPU_Model:"",
-            CPU_Mhz:"",
-            RAM_GB:"",
-            RAM_Mhz:"",
-            GPU:"",
-            HDD:"",
-            note: ""
+            Other_Docs: "",
+            Other_Apps: "",
+            Optimisation_App: "",
+            CPU_Model: getPastUserInput( pastData, "info~Usr_~CPU_Model" ) || "",
+            CPU_Mhz: getPastUserInput( pastData, "info~Usr_~CPU_Mhz" ) || "",
+            RAM_GB: getPastUserInput( pastData, "info~Usr_~RAM_GB" ) || "",
+            RAM_Mhz: getPastUserInput( pastData, "info~Usr_~RAM_Mhz" ) || "",
+            GPU_Model: getPastUserInput( pastData, "info~Usr_~GPU_Model" ) || "",
+            GPU_Mhz: getPastUserInput( pastData, "info~Usr_~GPU_Mhz" ) || "",
+            GPU_RAM: getPastUserInput( pastData, "info~Usr_~GPU_RAM" ) || "",
+            HDD: getPastUserInput( pastData, "info~Usr_~HDD" ) || "",
+            Note: getPastUserInput( pastData, "info~Usr_~Note" ) || ""
         }
     };
 
@@ -648,43 +614,43 @@ function infoUI(pastData, runcount, ver) { //What factors might be contributing 
 
     // GROUP1
     // ======
-    var group1 = infoUIwin.add("group", undefined, {
+    var mainGroup = infoUIwin.add("group", undefined, {
         name: "group1"
     });
-    group1.orientation = "column";
-    group1.alignChildren = ["left", "center"];
-    group1.spacing = 10;
-    group1.margins = 0;
+    mainGroup.orientation = "column";
+    mainGroup.alignChildren = ["left", "center"];
+    mainGroup.spacing = 10;
+    mainGroup.margins = 0;
 
     // GROUP2
     // ======
-    var group2 = group1.add("group", undefined, {
+    var dateandInfoGroup = mainGroup.add("group", undefined, {
         name: "group2"
     });
-    group2.orientation = "row";
-    group2.alignChildren = ["right", "center"];
-    group2.spacing = 10;
-    group2.margins = 0;
-    group2.alignment = ["fill", "center"];
+    dateandInfoGroup.orientation = "row";
+    dateandInfoGroup.alignChildren = ["right", "center"];
+    dateandInfoGroup.spacing = 10;
+    dateandInfoGroup.margins = 0;
+    dateandInfoGroup.alignment = ["fill", "center"];
 
-    var statictext1 = group2.add("statictext", undefined, undefined, {
+    var dateStatic = dateandInfoGroup.add("statictext", undefined, undefined, {
         name: "statictext1"
     });
-    statictext1.text = "Date: " + vars.date;
-    statictext1.justify = "right";
+    dateStatic.text = "Date: " + vars.date;
+    dateStatic.justify = "right";
 
-    // GROUP3
-    // ======
-    var group3 = group2.add("group", undefined, {
+   // GROUP3
+   // ======
+    var paddingGroup = dateandInfoGroup.add("group", undefined, {
         name: "group3"
     });
-    group3.preferredSize.width = 225;
-    group3.orientation = "row";
-    group3.alignChildren = ["left", "top"];
-    group3.spacing = 10;
-    group3.margins = 2;
+    paddingGroup.preferredSize.width = 300;
+    paddingGroup.orientation = "row";
+    paddingGroup.alignChildren = ["left", "top"];
+    paddingGroup.spacing = 10;
+    paddingGroup.margins = 2;
 
-    var infoButton = group2.add("button", undefined, undefined, {
+    var infoButton = dateandInfoGroup.add("button", undefined, undefined, {
         name: "infoButton"
     });
     infoButton.text = "Info";
@@ -693,39 +659,39 @@ function infoUI(pastData, runcount, ver) { //What factors might be contributing 
 
     // PANEL1
     // ======
-    var panel1 = group1.add("panel", undefined, undefined, {
+    var mainPanel = mainGroup.add("panel", undefined, undefined, {
         name: "panel1"
     });
-    panel1.text = "Factors that might affect test results:";
-    panel1.orientation = "row";
-    panel1.alignChildren = ["left", "top"];
-    panel1.spacing = 10;
-    panel1.margins = 10;
+    mainPanel.text = "Factors that might affect test results:";
+    mainPanel.orientation = "row";
+    mainPanel.alignChildren = ["left", "top"];
+    mainPanel.spacing = 10;
+    mainPanel.margins = 20;
 
     // GROUP4
     // ======
-    var group4 = panel1.add("group", undefined, {
+    var envVarsGroup = mainPanel.add("group", undefined, {
         name: "group4"
     });
-    group4.orientation = "column";
-    group4.alignChildren = ["left", "center"];
-    group4.spacing = 10;
-    group4.margins = 0;
+    envVarsGroup.orientation = "column";
+    envVarsGroup.alignChildren = ["left", "center"];
+    envVarsGroup.spacing = 10;
+    envVarsGroup.margins = 0;
 
     // GROUP5
     // ======
-    var group5 = group4.add("group", undefined, {
+    var otherDocsGroup = envVarsGroup.add("group", undefined, {
         name: "group5"
     });
-    group5.orientation = "row";
-    group5.alignChildren = ["left", "center"];
-    group5.spacing = 10;
-    group5.margins = 0;
+    otherDocsGroup.orientation = "row";
+    otherDocsGroup.alignChildren = ["left", "center"];
+    otherDocsGroup.spacing = 10;
+    otherDocsGroup.margins = 0;
 
 
     //////////////
 
-    var otherDocsCheckbox = group5.add("checkbox", undefined, undefined, {
+    var otherDocsCheckbox = otherDocsGroup.add("checkbox", undefined, undefined, {
         name: "otherDocsCheckbox"
     });
     otherDocsCheckbox.text = "Are other files currently open in Illustrator?";
@@ -736,15 +702,15 @@ function infoUI(pastData, runcount, ver) { //What factors might be contributing 
 
     // GROUP6
     // ======
-    var group6 = group4.add("group", undefined, {
+    var otherAppsGroup = envVarsGroup.add("group", undefined, {
         name: "group6"
     });
-    group6.orientation = "row";
-    group6.alignChildren = ["left", "center"];
-    group6.spacing = 10;
-    group6.margins = 0;
+    otherAppsGroup.orientation = "row";
+    otherAppsGroup.alignChildren = ["left", "center"];
+    otherAppsGroup.spacing = 10;
+    otherAppsGroup.margins = 0;
 
-    var otherAppsCheckbox = group6.add("checkbox", undefined, undefined, {
+    var otherAppsCheckbox = otherAppsGroup.add("checkbox", undefined, undefined, {
         name: "otherAppsCheckbox"
     });
     otherAppsCheckbox.text = "Have you bothered closing all other apps?";
@@ -755,15 +721,15 @@ function infoUI(pastData, runcount, ver) { //What factors might be contributing 
 
     // GROUP7
     // ======
-    var group7 = group4.add("group", undefined, {
+    var processOptGroup = envVarsGroup.add("group", undefined, {
         name: "group7"
     });
-    group7.orientation = "row";
-    group7.alignChildren = ["left", "center"];
-    group7.spacing = 10;
-    group7.margins = 0;
+    processOptGroup.orientation = "row";
+    processOptGroup.alignChildren = ["left", "center"];
+    processOptGroup.spacing = 10;
+    processOptGroup.margins = 0;
 
-    var processOptCheckbox = group7.add("checkbox", undefined, undefined, {
+    var processOptCheckbox = processOptGroup.add("checkbox", undefined, undefined, {
         name: "processOptCheckbox"
     });
     processOptCheckbox.helpTip = "eg. Process Lasso, CPUCores etc.";
@@ -775,14 +741,14 @@ function infoUI(pastData, runcount, ver) { //What factors might be contributing 
 
     // GROUP4
     // ======
-    var divider1 = group4.add("panel", undefined, undefined, {
+    var divider1 = envVarsGroup.add("panel", undefined, undefined, {
         name: "divider1"
     });
     divider1.alignment = "fill";
 
     // GROUP8
     // ======
-    var group8 = group4.add("group", undefined, {
+    var group8 = envVarsGroup.add("group", undefined, {
         name: "group8"
     });
     group8.orientation = "row";
@@ -802,7 +768,7 @@ function infoUI(pastData, runcount, ver) { //What factors might be contributing 
 
     // GROUP9
     // ======
-    var group9 = group4.add("group", undefined, {
+    var group9 = envVarsGroup.add("group", undefined, {
         name: "group9"
     });
     group9.orientation = "row";
@@ -822,7 +788,7 @@ function infoUI(pastData, runcount, ver) { //What factors might be contributing 
 
     // GROUP10
     // =======
-    var group10 = group4.add("group", undefined, {
+    var group10 = envVarsGroup.add("group", undefined, {
         name: "group10"
     });
     group10.orientation = "row";
@@ -842,7 +808,7 @@ function infoUI(pastData, runcount, ver) { //What factors might be contributing 
 
     // GROUP11
     // =======
-    var group11 = group4.add("group", undefined, {
+    var group11 = envVarsGroup.add("group", undefined, {
         name: "group11"
     });
     group11.orientation = "row";
@@ -862,7 +828,7 @@ function infoUI(pastData, runcount, ver) { //What factors might be contributing 
 
     // GROUP12
     // =======
-    var group12 = group4.add("group", undefined, {
+    var group12 = envVarsGroup.add("group", undefined, {
         name: "group12"
     });
     group12.orientation = "row";
@@ -875,39 +841,41 @@ function infoUI(pastData, runcount, ver) { //What factors might be contributing 
     });
     statictext10.text = "Number of Processors: ";
 
-    var statictext11 = group12.add("statictext", undefined, undefined, {
-        name: "statictext11"
+    var threadsStatic = group12.add("statictext", undefined, undefined, {
+        name: "threadsStatic"
     });
-    statictext11.text = vars.Env_Info.threads;
+    threadsStatic.text = vars.Env_Info.threads;
 
     // GROUP4
     // ======
-    var divider2 = group4.add("panel", undefined, undefined, {
+    var divider2 = envVarsGroup.add("panel", undefined, undefined, {
         name: "divider2"
     });
     divider2.alignment = "fill";
 
-    var noteEdit = group4.add('edittext {properties: {name: "edittext1", multiline: true, scrollable: true}}');
-    noteEdit.text = "Note";
-    noteEdit.preferredSize.height = 79;
+    var noteEdit = envVarsGroup.add('edittext {properties: {name: "edittext1", multiline: true, scrollable: true}}');
+    noteEdit.text = "";
+    noteEdit.helpTip = "A note about anything else you feel is significant about this run";
+    noteEdit.preferredSize.height = 50;
     noteEdit.alignment = ["fill", "center"];
     noteEdit.onChange = function(){
-        vars.Usr_Inpt.note = noteEdit.text;
+        vars.Usr_Inpt.note = noteEdit.text.replace(/,/g,'-');
     }
 
 
-    var divider3 = panel1.add("panel", undefined, undefined, {
+    var divider3 = mainPanel.add("panel", undefined, undefined, {
         name: "divider3"
     });
     divider3.alignment = "fill";
 
-    // GROUP13
-    // =======
-    var hardwareGroup = panel1.add("group", undefined, {
+    // HARDWARE GROUP _____________________________________________________________
+    // ======= 
+
+    var hardwareGroup = mainPanel.add("group", undefined, {
         name: "hardwareGroup"
     });
     hardwareGroup.orientation = "column";
-    hardwareGroup.alignChildren = ["fill", "center"];
+    hardwareGroup.alignChildren = ["right", "center"];
     hardwareGroup.spacing = 10;
     hardwareGroup.margins = 0;
 
@@ -916,18 +884,19 @@ function infoUI(pastData, runcount, ver) { //What factors might be contributing 
     });
     hardwareStatic.helpTip = "This might be interested if you're overclocking or changing hardware";
     hardwareStatic.text = "Hardware";
-    hardwareStatic.preferredSize.width = 250;
+    hardwareStatic.preferredSize.width = 120;
     hardwareStatic.justify = "center";
     hardwareStatic.alignment = ["center", "center"];
 
     // GROUP14
     // =======
     var cpuNameGroup = hardwareGroup.add("group", undefined, {
-        name: "cpuNameGrou"
+        name: "cpuNameGroup"
     });
     cpuNameGroup.orientation = "column";
-    cpuNameGroup.alignChildren = ["fill", "top"];
+    cpuNameGroup.alignChildren = ["fill", "center"];
     cpuNameGroup.spacing = 10;
+    cpuNameGroup.preferredSize.height = 24;
 
 
     var cpuNameStatic = cpuNameGroup.add("statictext", undefined, undefined, {
@@ -939,26 +908,27 @@ function infoUI(pastData, runcount, ver) { //What factors might be contributing 
         vars.Usr_Inpt.CPU_Model = cpuNameStatic.text;
     }
 
-    var cpuNameEdit = cpuNameGroup.add('edittext {properties: {name: "cpuNameEdit"}}');
-   // cpuNameEdit.preferredSize.width = 100;
+  //  var cpuNameEdit = cpuNameGroup.add('edittext {properties: {name: "cpuNameEdit"}}');
+
 
 //////////////////////////////////////////////////////<<<<<<<<<<<<<<<<<<< TODO from here on
     // GROUP15
     // =======
-    var group15 = hardwareGroup.add("group", undefined, {
-        name: "group15"
+    var cpuSpeedGroup = hardwareGroup.add("group", undefined, {
+        name: "cpuSpeedGroup"
     });
-    group15.orientation = "column";
-    group15.alignChildren = ["fill", "top"];
-    group15.spacing = 10;
+    cpuSpeedGroup.orientation = "column";
+    cpuSpeedGroup.alignChildren = ["fill", "center"];
+    cpuSpeedGroup.preferredSize.height = 24;
+    cpuSpeedGroup.spacing = 10;
 
-    var statictext14 = group15.add("statictext", undefined, undefined, {
+    var statictext14 = cpuSpeedGroup.add("statictext", undefined, undefined, {
         name: "statictext14"
     });
     statictext14.helpTip = "eg. 4800";
     statictext14.text = "CPU Mhz:";
 
-    var edittext3 = group15.add('edittext {properties: {name: "edittext3"}}');
+  //  var edittext3 = cpuNameGroup.add('edittext {properties: {name: "edittext3"}}');
 
     // GROUP16
     // =======
@@ -966,7 +936,8 @@ function infoUI(pastData, runcount, ver) { //What factors might be contributing 
         name: "group16"
     });
     group16.orientation = "column";
-    group16.alignChildren = ["fill", "top"];
+    group16.alignChildren = ["fill", "center"];
+    group16.preferredSize.height = 24;
     group16.spacing = 10;
     group16.margins = 0;
 
@@ -976,7 +947,7 @@ function infoUI(pastData, runcount, ver) { //What factors might be contributing 
     statictext15.helpTip = "eg. 16";
     statictext15.text = "RAM GB:";
 
-    var edittext4 = group16.add('edittext {properties: {name: "edittext4"}}');
+  //  var edittext4 = group16.add('edittext {properties: {name: "edittext4"}}');
 
     // GROUP17
     // =======
@@ -984,8 +955,9 @@ function infoUI(pastData, runcount, ver) { //What factors might be contributing 
         name: "group17"
     });
     group17.orientation = "column";
-    group17.alignChildren = ["fill", "top"];
+    group17.alignChildren = ["fill", "center"];
     group17.spacing = 10;
+    group17.preferredSize.height = 24;
 
     var statictext16 = group17.add("statictext", undefined, undefined, {
         name: "statictext16"
@@ -993,7 +965,7 @@ function infoUI(pastData, runcount, ver) { //What factors might be contributing 
     statictext16.helpTip = "eg. 2133";
     statictext16.text = "RAM Mhz:";
 
-    var edittext5 = group17.add('edittext {properties: {name: "edittext5"}}');
+ //   var edittext5 = group17.add('edittext {properties: {name: "edittext5"}}');
 
     // GROUP18
     // =======
@@ -1001,8 +973,9 @@ function infoUI(pastData, runcount, ver) { //What factors might be contributing 
         name: "group18"
     });
     group18.orientation = "column";
-    group18.alignChildren = ["fill", "top"];
+    group18.alignChildren = ["fill", "center"];
     group18.spacing = 10;
+    group18.preferredSize.height = 24;
 
     var statictext17 = group18.add("statictext", undefined, undefined, {
         name: "statictext17"
@@ -1010,7 +983,7 @@ function infoUI(pastData, runcount, ver) { //What factors might be contributing 
     statictext17.helpTip = "eg. GTX 1070 ti";
     statictext17.text = "GPU name:";
 
-    var edittext6 = group18.add('edittext {properties: {name: "edittext6"}}');
+ //   var edittext6 = group18.add('edittext {properties: {name: "edittext6"}}');
 
     // GROUP19
     // =======
@@ -1018,9 +991,10 @@ function infoUI(pastData, runcount, ver) { //What factors might be contributing 
         name: "gpuGroup"
     });
     gpuGroup.orientation = "column";
-    gpuGroup.alignChildren = ["fill", "top"];
+    gpuGroup.alignChildren = ["fill", "center"];
     gpuGroup.spacing = 10;
     gpuGroup.margins = 0;
+    gpuGroup.preferredSize.height = 24;
 
     var gpuMhzStatic = gpuGroup.add("statictext", undefined, undefined, {
         name: "gpuMhzStatic"
@@ -1028,7 +1002,7 @@ function infoUI(pastData, runcount, ver) { //What factors might be contributing 
     gpuMhzStatic.helpTip = "eg. 1683";
     gpuMhzStatic.text = "GPU Mhz:";
 
-    var gpuMhzEdit = gpuGroup.add('edittext {properties: {name: "gpuMhzEdit"}}');
+   // var gpuMhzEdit = gpuGroup.add('edittext {properties: {name: "gpuMhzEdit"}}');
 
     // GROUP20
     // =======
@@ -1036,9 +1010,10 @@ function infoUI(pastData, runcount, ver) { //What factors might be contributing 
         name: "ramGroup"
     });
     ramGroup.orientation = "column";
-    ramGroup.alignChildren = ["fill", "top"];
+    ramGroup.alignChildren = ["fill", "center"];
     ramGroup.spacing = 10;
     ramGroup.margins = 0;
+    ramGroup.preferredSize.height = 24;
 
     var ramStatic = ramGroup.add("statictext", undefined, undefined, {
         name: "ramStatic"
@@ -1046,7 +1021,7 @@ function infoUI(pastData, runcount, ver) { //What factors might be contributing 
     ramStatic.helpTip = "eg. 8";
     ramStatic.text = "GPU RAM GB:";
 
-    var ramEdit = ramGroup.add('edittext {properties: {name: "ramEdit"}}');
+   // var ramEdit = ramGroup.add('edittext {properties: {name: "ramEdit"}}');
 
     // GROUP21
     // =======
@@ -1057,31 +1032,118 @@ function infoUI(pastData, runcount, ver) { //What factors might be contributing 
     storageGroup.alignChildren = ["left", "center"];
     storageGroup.spacing = 10;
     storageGroup.margins = 0;
+    storageGroup.preferredSize.height = 20;
 
     var storageText = storageGroup.add("statictext", undefined, undefined, {
         name: "storageText"
     });
     storageText.helpTip = "eg. 8";
-    storageText.text = "Storage";
+    storageText.text = "Storage:";
 
-    var hdRadio = storageGroup.add("radiobutton", undefined, undefined, {
+
+    // HARDWARE EDITS
+    // =======
+
+    var hardwareEditGroup = mainPanel.add("group", undefined, {
+        name: "hardwareEditGroup"
+    });
+    hardwareEditGroup.orientation = "column";
+    hardwareEditGroup.alignChildren = ["fill", "center"];
+    hardwareEditGroup.spacing = 10;
+    hardwareEditGroup.margins = 0;
+
+    var blankStatic = hardwareEditGroup.add('statictext {properties: {name: "cpuNameEdit"}}');
+    blankStatic.preferredSize.width=250;
+
+    var cpuNameEdit = hardwareEditGroup.add('edittext {properties: {name: "cpuNameEdit"}}');
+    cpuNameEdit.onChange = function(){
+        vars.Usr_Inpt.CPU_Model = cpuNameEdit.text.replace(/,/g,'-');
+    }
+    
+    var cpuMhzEdit = hardwareEditGroup.add('edittext {properties: {name: "cpuNameEdit"}}');
+    cpuMhzEdit.onChange = function(){
+        vars.Usr_Inpt.CPU_Mhz = cpuMhzEdit.text.replace(/,/g,'-');
+    }
+
+    var ramGBEdit = hardwareEditGroup.add('edittext {properties: {name: "cpuNameEdit"}}');
+    ramGBEdit.onChange = function(){
+        vars.Usr_Inpt.RAM_GB = ramGBEdit.text.replace(/,/g,'-');
+    }
+    
+    var ramMhzEdit = hardwareEditGroup.add('edittext {properties: {name: "cpuNameEdit"}}');
+    ramMhzEdit.onChange = function(){
+        vars.Usr_Inpt.RAM_Mhz = ramMhzEdit.text.replace(/,/g,'-');
+    }
+
+    var gpuNameEdit = hardwareEditGroup.add('edittext {properties: {name: "cpuNameEdit"}}');
+    gpuNameEdit.onChange = function(){
+        vars.Usr_Inpt.GPU_Model = gpuNameEdit.text.replace(/,/g,'-');
+    }
+    
+    var gpuMhzEdit = hardwareEditGroup.add('edittext {properties: {name: "cpuNameEdit"}}');
+    gpuMhzEdit.onChange = function(){
+        vars.Usr_Inpt.GPU_Mhz = gpuMhzEdit.text.replace(/,/g,'-');
+    }
+    
+    var gpuRamEdit = hardwareEditGroup.add('edittext {properties: {name: "cpuNameEdit"}}');
+    gpuRamEdit.onChange = function(){
+        vars.Usr_Inpt.GPU_RAM = gpuRamEdit.text.replace(/,/g,'-');
+    }
+
+    var storageRadioGroup = hardwareEditGroup.add("group", undefined, {
+        name: "storageGroup"
+    });
+    storageRadioGroup.orientation = "row";
+    storageRadioGroup.alignChildren = ["left", "center"];
+    storageRadioGroup.spacing = 10;
+    storageRadioGroup.margins = 0;
+    storageRadioGroup.preferredSize.height = 25;
+    
+    var hdRadio = storageRadioGroup.add("radiobutton", undefined, undefined, {
         name: "hdRadio"
     });
     hdRadio.text = "HD";
+    hdRadio.onClick = function(){
+        vars.Usr_Inpt.HDD = "HD";
+    }
 
-    var ssdRadio = storageGroup.add("radiobutton", undefined, undefined, {
+    var ssdRadio = storageRadioGroup.add("radiobutton", undefined, undefined, {
         name: "ssdRadio"
     });
     ssdRadio.text = "SSD";
+    ssdRadio.onClick = function(){
+        vars.Usr_Inpt.HDD = "SSD";
+    }
 
-    var nvmeRadio = storageGroup.add("radiobutton", undefined, undefined, {
+    var nvmeRadio = storageRadioGroup.add("radiobutton", undefined, undefined, {
         name: "nvmeRadio"
     });
     nvmeRadio.text = "NVMe";
+    nvmeRadio.onClick = function(){
+        vars.Usr_Inpt.HDD = "NVME";
+    }
+
+    switch(vars.Usr_Inpt.HDD){
+        case "HD" : {
+            hdRadio.value=true;
+            break;
+        }
+        case "SSD" : {
+            ssdRadio.value=true;
+            break;
+        }
+        case "NVME" : {
+            nvmeRadio.value=true;
+            break;
+        }
+        default : {
+            break;
+        }
+    }
 
     // GROUP22
     // =======
-    var buttonGroup = group1.add("group", undefined, {
+    var buttonGroup = mainGroup.add("group", undefined, {
         name: "buttonGroup"
     });
     buttonGroup.orientation = "row";
@@ -1090,13 +1152,14 @@ function infoUI(pastData, runcount, ver) { //What factors might be contributing 
     buttonGroup.margins = 0;
     buttonGroup.alignment = ["fill", "center"];
 
-    var goAheadAndRunThisThing = true;
+    var cancel = true;
 
     var benchmarkButton = buttonGroup.add("button", undefined, undefined, {
         name: "benchmarkButton"
     });
     benchmarkButton.text = "Run benchmark";
     benchmarkButton.onClick = function(){
+        cancel = false;
         infoUIwin.close();
     }
 
@@ -1105,12 +1168,11 @@ function infoUI(pastData, runcount, ver) { //What factors might be contributing 
     });
     cancelButton.text = "Cancel";
     cancelButton.onClick = function(){
-        goAheadAndRunThisThing = false;
         infoUIwin.close();
     }
 
     infoUIwin.show();
-    return goAheadAndRunThisThing ? vars : false; 
+    return !cancel ? vars : false; 
 }
 
 //_____________DISPLAY RESULTS UI
@@ -1120,7 +1182,7 @@ function infoUI(pastData, runcount, ver) { //What factors might be contributing 
 //_________________________________________
 
 
-function displayResults(tests, results, pastResults, info, runCount) {
+function displayResults( tests, results, pastResults, info, runCount ) {
     //https://scriptui.joonas.me <- praise
 
     // BENCHRESULTSWIN
@@ -1614,4 +1676,38 @@ function displayResults(tests, results, pastResults, info, runCount) {
         }
 
     benchResultsWin.show();
+}
+
+//_________________________________________________
+
+function isoDatePrototype(){
+    if (!Date.prototype.toISOString) {
+        (function() {
+            function pad(number) {
+                if (number < 10) {
+                    return "0" + number;
+                }
+                return number;
+            }
+
+            Date.prototype.toISOString = function() {
+                return (
+                    this.getUTCFullYear() + //YYYY-MM-DD HH:MM:SS:MM
+                    "-" +
+                    pad(this.getUTCMonth() + 1) +
+                    "-" +
+                    pad(this.getUTCDate()) +
+                    " " +
+                    pad(this.getUTCHours()) +
+                    ":" +
+                    pad(this.getUTCMinutes()) +
+                    ":" +
+                    pad(this.getUTCSeconds())
+                    //  +
+                    // "." +
+                    // (this.getUTCMilliseconds() / 1000).toFixed(3).slice(2, 5)
+                );
+            };
+        })();
+    }
 }
