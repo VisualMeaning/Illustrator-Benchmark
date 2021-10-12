@@ -360,7 +360,7 @@ function getDataFromCsvContents( arr, delimiter ){//return some sort of data str
 
 //_____________________________________________
 
-function getResultsArr( rows, delimiter){ //returns an object contain headers[key] and rows[row number][value]
+function getResultsArr( rows, delimiter){ //returns an object containing headers[key] and rows[row number][value]
     var results = {};
     results.headers = rows.shift().split(delimiter);
     results.rows = [];
@@ -386,41 +386,68 @@ function popUndefinedOffArr(arr){
 
 //_____________________________________________
 
-function analyseResults(results) {
+function analyseResults(pastData, tests, testTots) {
     //read from file - from the set of all past file runs
-    var totals = getSubArr( results, "totals");
-    var transformations = getSubArr( results, "transformations");
-    var effects = getSubArr( results, "effects");
-    var zoom = getSubArr( results,"zoom");
-    var fileWrite = getSubArr( results,"fileWrite");
+    var pastTotals = getTimesAndScores( pastData, "totals");
+    var pastRectangles = getTimesAndScores( pastData, "rectangles");
+    var pastTransformations = getTimesAndScores( pastData, "transformations");
+    var pastEffects = getTimesAndScores( pastData, "effects");
+    var pastZoom = getTimesAndScores( pastData,"zoom");
+    var pastFileWrite = getTimesAndScores( pastData,"fileWrite");
 
     var vars = {
-        totals: analysis(totals),
-        transformations: analysis(transformations),
-        effects: analysis(effects),
-        zoom: analysis(zoom),
-        fileWrite: analysis(fileWrite)
+        totals: analysis(pastTotals, testTots),
+        rectangles : analysis(pastRectangles, tests.rectangles ),
+        transformations: analysis(pastTransformations, tests.transformations),
+        effects: analysis(pastEffects, tests.effects),
+        zoom: analysis(pastZoom, tests.zoom),
+        fileWrite: analysis(pastFileWrite, tests.filewrite)
     }
     return vars; //average, mean, time delta, highest on record for individual tests and totals
 }
 
 //_____________________________________________
 
-function getSubArr( arr, str ){
+function getTimesAndScores( arr, name){
+    var obj = {
+        name : name,
+        times : [],
+        score : []
+    };
+   // var subArr = [];
+    for(var i = 0; i < arr.lengt; i++){
+        //test for ^tests followed by ~ + name
+        //  test for times
+         //   else scores
+
+        //
+    }
 //match str within subar. Or maybe an obj?
+
+    return subArr;
 }
 
 //_____________________________________________
 
-function analysis( set ){
+function analysis( arr ){
     /// calculations
-    return {
-            average: 0,
-            mean: 0,
-            timeDelta: 0,
-            recordTime: 0,
-            recordScore: 0
+    var vars = {
+        average: 0,
+        mean: 0,
+        timeDelta: 0,
+        recordTime: 0,
+        recordScore: 0
     }
+    // average
+
+
+    // mean
+    // timeDelta
+    // best time
+    // best score
+
+    for(var i = arr.length; i > 0; i--){
+    return vars;
 }
 
 //_____________________________________________
@@ -445,7 +472,7 @@ function objKeysToString(vari, delimiter, par){ //return a delimited string for 
 
  //_____________________________________________
 
-function objValsToString(vari, delimiter, st){
+function objValsToString(vari, delimiter){
     var str = "";
     for (var key in vari){
         if(key && vari[key] && key != "toJSON"){
@@ -907,11 +934,6 @@ function infoUI(pastData, runcount, ver, pastData) { //What factors might be con
     cpuNameStatic.onChange = function(){
         vars.Usr_Inpt.CPU_Model = cpuNameStatic.text;
     }
-
-  //  var cpuNameEdit = cpuNameGroup.add('edittext {properties: {name: "cpuNameEdit"}}');
-
-
-//////////////////////////////////////////////////////<<<<<<<<<<<<<<<<<<< TODO from here on
     // GROUP15
     // =======
     var cpuSpeedGroup = hardwareGroup.add("group", undefined, {
@@ -922,11 +944,11 @@ function infoUI(pastData, runcount, ver, pastData) { //What factors might be con
     cpuSpeedGroup.preferredSize.height = 24;
     cpuSpeedGroup.spacing = 10;
 
-    var statictext14 = cpuSpeedGroup.add("statictext", undefined, undefined, {
-        name: "statictext14"
+    var cpuMhzStatic = cpuSpeedGroup.add("statictext", undefined, undefined, {
+        name: "cpuMhzStatic"
     });
-    statictext14.helpTip = "eg. 4800";
-    statictext14.text = "CPU Mhz:";
+    cpuMhzStatic.helpTip = "eg. 4800";
+    cpuMhzStatic.text = "CPU Mhz:";
 
   //  var edittext3 = cpuNameGroup.add('edittext {properties: {name: "edittext3"}}');
 
