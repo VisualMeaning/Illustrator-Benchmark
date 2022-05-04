@@ -29,7 +29,7 @@ main();
 //_______ Main
 
 function main(runs) {
-    var VERSION = "0.63.0"; //script version
+    var VERSION = "0.64.0"; //script version
     var delimiter = ',';//'\t'
     var runCount = runs || 0;
     var docName = "Illustrator Benchmark Doc.ai";
@@ -446,7 +446,7 @@ function analysis( arr ){
     // best time
     // best score
 
-    for(var i = arr.length; i > 0; i--){
+    //for(var i = arr.length; i > 0; i--){
     return vars;
 }
 
@@ -1402,6 +1402,7 @@ function displayResults( tests, results, pastResults, info, runCount ) {
         averagesAndHighsTab.alignChildren = ["left","top"]; 
         averagesAndHighsTab.spacing = 10; 
         averagesAndHighsTab.margins = 10; 
+        averagesAndHighsTab.enabled = false;
 
     // TPANEL1
     // =======
